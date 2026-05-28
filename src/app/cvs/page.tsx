@@ -131,6 +131,7 @@ function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => v
         )}
       </div>
       <p className="font-semibold text-brand-black text-sm mb-1 truncate">{candidate.fullName}</p>
+      <p className="text-xs text-brand-gray mb-1">{candidate.phone}</p>
       <p className="text-xs text-brand-gray mb-2 uppercase">{candidate.cvFileType}</p>
 
       {candidate.assignments && candidate.assignments.length > 0 && (
