@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, Users, FileText, Bell, LogOut } from "lucide-react";
+import { Briefcase, Users, FileText, Bell, LogOut, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingRemindersCount } from "@/lib/api/reminders";
+import { toast } from "sonner";
 
 const staticNavItems = [
   { href: "/jobs", label: "משרות", icon: Briefcase },
@@ -17,6 +18,25 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: pendingCount } = usePendingRemindersCount();
+
+  const handleExport = async () => {
+    try {
+      toast.loading("מייצא נתונים...", { id: "export" });
+      const res = await fetch("/api/export");
+      if (!res.ok) throw new Error("שגיאה בייצוא");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const date = new Date().toLocaleDateString("he-IL").replace(/\//g, "-");
+      a.href = url;
+      a.download = `hr-export-${date}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("הקובץ הורד בהצלחה", { id: "export" });
+    } catch {
+      toast.error("שגיאה בייצוא הנתונים", { id: "export" });
+    }
+  };
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -81,7 +101,14 @@ export default function Sidebar() {
         })()}
       </nav>
 
-      <div className="p-3 border-t border-brand-gray-border">
+      <div className="p-3 border-t border-brand-gray-border space-y-1">
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-brand-gray hover:bg-green-50 hover:text-green-700 transition-colors duration-150 text-sm"
+        >
+          <Download className="w-4 h-4 flex-shrink-0" />
+          <span>ייצוא לאקסל</span>
+        </button>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-brand-gray hover:bg-red-50 hover:text-red-600 transition-colors duration-150 text-sm"
