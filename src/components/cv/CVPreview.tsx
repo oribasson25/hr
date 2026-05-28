@@ -43,6 +43,7 @@ export default function CVPreview({ candidate, open, onClose }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-brand-gray-border flex-shrink-0">
           <div>
             <h2 className="font-bold text-brand-black text-lg">{candidate.fullName}</h2>
+            <p className="text-sm text-brand-gray">{candidate.phone}</p>
             {candidate.cvFileName && (
               <p className="text-sm text-brand-gray">{candidate.cvFileName}</p>
             )}
