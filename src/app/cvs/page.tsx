@@ -123,6 +123,7 @@ function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => v
       onClick={onClick}
       className="group bg-white rounded-2xl p-4 border border-brand-gray-border text-center hover:shadow-md hover:bg-brand-yellow-soft transition-all duration-200 relative"
     >
+      <p className="text-xs text-brand-gray mb-2">{candidate.phone}</p>
       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 ${isPdf ? "bg-red-50" : "bg-blue-50"}`}>
         {isPdf ? (
           <FileText className="w-7 h-7 text-red-500" />
