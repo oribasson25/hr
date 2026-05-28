@@ -121,7 +121,7 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
             ? "bg-brand-yellow text-brand-black border-brand-yellow"
             : "bg-brand-black text-white border-brand-black"
         }`}>
-          {job.status === "open" ? "פתוחה" : "אויישה"}
+          {job.status === "open" ? "פתוחה" : "נסגרה"}
         </Badge>
       </div>
       <p className="text-brand-gray text-sm leading-relaxed line-clamp-2 mb-4">{job.description}</p>

@@ -49,7 +49,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
 
   const handleFill = async () => {
     await updateJob.mutateAsync({ status: "filled" });
-    toast.success("המשרה סומנה כאויישה");
+    toast.success("המשרה סומנה כנסגרה");
     setShowFillConfirm(false);
   };
 
@@ -107,7 +107,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
             <div className="flex items-center gap-2 text-green-800">
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
               <span className="font-medium">
-                המשרה אויישה{job.filledAt && ` ב-${new Date(job.filledAt).toLocaleDateString("he-IL")}`}
+                המשרה נסגרה{job.filledAt && ` ב-${new Date(job.filledAt).toLocaleDateString("he-IL")}`}
               </span>
             </div>
             <Button
@@ -126,7 +126,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-brand-black">{job.title}</h1>
             <Badge className={`rounded-full ${isFilled ? "bg-brand-black text-white" : "bg-brand-yellow text-brand-black"}`}>
-              {isFilled ? "אויישה" : "פתוחה"}
+              {isFilled ? "נסגרה" : "פתוחה"}
             </Badge>
           </div>
           <DropdownMenu>
@@ -146,7 +146,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
               ) : (
                 <DropdownMenuItem onClick={() => setShowFillConfirm(true)} className="gap-2">
                   <CheckCircle className="w-4 h-4" />
-                  סמן כאויישה
+                  סמן כנסגרה
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => setShowReminderForm(true)} className="gap-2">
@@ -197,10 +197,10 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
       <Dialog open={showFillConfirm} onOpenChange={setShowFillConfirm}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle>סימון כאויישה</DialogTitle>
+            <DialogTitle>סגירת משרה</DialogTitle>
           </DialogHeader>
           <p className="text-brand-gray text-sm">
-            האם לסמן את המשרה "{job.title}" כאויישה? <br />
+            האם לסגור את המשרה "{job.title}"? <br />
             מועמדים שמורים בעמודת "לעתיד" יישארו זמינים.
           </p>
           <DialogFooter className="gap-2">

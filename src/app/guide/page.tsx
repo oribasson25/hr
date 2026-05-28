@@ -62,7 +62,7 @@ const SLIDES: Slide[] = [
         <div className="grid grid-cols-3 gap-3 text-center">
           {[
             { label: "פתוחה", color: "bg-green-100 text-green-700 border-green-200", desc: "משרה פעילה" },
-            { label: "אויישה", color: "bg-brand-black text-white border-brand-black", desc: "נמצא מועמד מתאים" },
+            { label: "נסגרה", color: "bg-brand-black text-white border-brand-black", desc: "המשרה נסגרה" },
             { label: "סגורה", color: "bg-gray-100 text-gray-600 border-gray-200", desc: "לא פעילה" },
           ].map((s, i) => (
             <div key={i} className={`rounded-xl border-2 p-3 ${s.color}`}>
@@ -74,7 +74,7 @@ const SLIDES: Slide[] = [
         <div className="space-y-3">
           <Step num={1} text='לחצו על "משרה חדשה" ומלאו כותרת, תיאור ודרישות' />
           <Step num={2} text="כל משרה פתוחה מקבלת לוח קנבן לניהול המועמדים המשויכים אליה" />
-          <Step num={3} text='סמנו משרה כ"אויישה" כשנסגרה — המועמדים עדיין נשמרים לעתיד' />
+          <Step num={3} text='סמנו משרה כ"נסגרה" כשנסגרה — המועמדים עדיין נשמרים לעתיד' />
           <Step num={4} text="ניתן לערוך, למחוק ולראות את כל המשרות בעמוד המשרות" />
         </div>
       </div>

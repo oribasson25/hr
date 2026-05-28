@@ -396,7 +396,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                         </div>
                         <div className="flex items-center gap-2">
                           {assignment.job?.status === "filled" && (
-                            <Badge className="bg-brand-black text-white text-xs">אויישה</Badge>
+                            <Badge className="bg-brand-black text-white text-xs">נסגרה</Badge>
                           )}
                           <Badge className={`${STATUS_COLORS[assignment.status]} text-xs rounded-full`}>
                             {STATUS_LABELS[assignment.status]}

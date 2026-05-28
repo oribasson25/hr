@@ -8,7 +8,7 @@ const STATUS_LABELS: Record<string, string> = {
   not_relevant: "לא רלוונטי",
   future: "לעתיד",
   open: "פתוחה",
-  filled: "אויישה",
+  filled: "נסגרה",
   closed: "סגורה",
 };
 
@@ -60,7 +60,7 @@ export async function GET() {
       "דרישות": j.requirements,
       "סטטוס": STATUS_LABELS[j.status] ?? j.status,
       "תאריך הקמה": new Date(j.createdAt).toLocaleDateString("he-IL"),
-      "תאריך אויישה": j.filledAt ? new Date(j.filledAt).toLocaleDateString("he-IL") : "",
+      "תאריך סגירה": j.filledAt ? new Date(j.filledAt).toLocaleDateString("he-IL") : "",
     }));
     const wsJobs = rtlSheet(XLSX.utils.json_to_sheet(jobsData));
     wsJobs["!cols"] = [30, 40, 40, 12, 16, 16].map((w) => ({ wch: w }));

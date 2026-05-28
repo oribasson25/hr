@@ -98,7 +98,7 @@ export default function KanbanBoard({ job }: Props) {
       {isFilled && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2 text-green-800">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span className="text-sm font-medium">המשרה אויישה — עמודת "לעתיד" נשארת פעילה לשמירת מועמדים</span>
+          <span className="text-sm font-medium">המשרה נסגרה — עמודת "לעתיד" נשארת פעילה לשמירת מועמדים</span>
         </div>
       )}
 
