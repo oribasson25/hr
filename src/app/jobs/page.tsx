@@ -14,7 +14,7 @@ import type { Job } from "@/types/api";
 const statusLabels: Record<string, string> = {
   all: "הכול",
   open: "פתוחות",
-  filled: "אויישו",
+  filled: "סגורות",
 };
 
 export default function JobsPage() {
