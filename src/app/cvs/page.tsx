@@ -136,11 +136,21 @@ function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => v
       <p className="text-xs text-brand-gray mb-2 uppercase">{candidate.cvFileType}</p>
 
       {candidate.assignments && candidate.assignments.length > 0 && (
-        <div className="flex flex-wrap gap-1 justify-center">
+        <div className="flex flex-col gap-1 items-center">
           {candidate.assignments.slice(0, 2).map((a) => (
-            <span key={a.id} className="text-xs bg-brand-gray-light text-brand-gray px-2 py-0.5 rounded-full">
-              {a.job?.title && a.job.title.length > 12 ? a.job.title.slice(0, 12) + "…" : a.job?.title}
-            </span>
+            <div key={a.id} className="flex items-center gap-1 flex-wrap justify-center">
+              <span className="text-xs bg-brand-gray-light text-brand-gray px-2 py-0.5 rounded-full">
+                {a.job?.title && a.job.title.length > 12 ? a.job.title.slice(0, 12) + "…" : a.job?.title}
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                a.status === "leading" ? "bg-brand-yellow text-brand-black" :
+                a.status === "candidate" ? "bg-blue-100 text-blue-800" :
+                a.status === "future" ? "bg-purple-100 text-purple-800" :
+                "bg-gray-100 text-gray-600"
+              }`}>
+                {{ leading: "מוביל", candidate: "מועמד", future: "לעתיד", not_relevant: "לא רלוונטי" }[a.status]}
+              </span>
+            </div>
           ))}
           {candidate.assignments.length > 2 && (
             <span className="text-xs text-brand-gray">+{candidate.assignments.length - 2}</span>
