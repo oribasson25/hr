@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Users, FileText, Bell, Download, ChevronRight, ChevronLeft,
   Plus, Search, Kanban, Upload, RefreshCw, Trash2, AlertCircle, BookOpen,
-  CheckCircle, Phone,
+  CheckCircle, Phone, ScanSearch,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
@@ -257,6 +257,49 @@ const SLIDES: Slide[] = [
           <p className="text-sm text-green-800">
             לחצו על <strong>"ייצוא לאקסל"</strong> בתחתית הסרגל הצדדי — הקובץ יורד מיד עם כל הנתונים בעברית
           </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 9,
+    title: "התאמת קורות חיים",
+    subtitle: "מצאו את המועמד המתאים לכל משרה ללא AI",
+    icon: <ScanSearch className="w-10 h-10" />,
+    color: "from-cyan-500 to-teal-400",
+    content: (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { label: "התאמה גבוהה", color: "bg-green-100 text-green-700 border-green-200", desc: "≥70%" },
+            { label: "התאמה בינונית", color: "bg-yellow-100 text-yellow-700 border-yellow-200", desc: "40–69%" },
+            { label: "התאמה נמוכה", color: "bg-red-100 text-red-700 border-red-200", desc: "<40%" },
+          ].map((s, i) => (
+            <div key={i} className={`rounded-xl border-2 p-3 ${s.color}`}>
+              <div className="font-bold mb-1">{s.label}</div>
+              <div className="text-xs opacity-80">{s.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div className="bg-brand-gray-light rounded-2xl p-4 text-sm space-y-1">
+          <p className="font-semibold text-brand-black mb-2">4 שיטות התאמה:</p>
+          {[
+            { label: "מדויק", desc: 'Python = "Python"', color: "text-green-700" },
+            { label: "נרדף", desc: 'JS = "JavaScript"', color: "text-blue-700" },
+            { label: "גזרה", desc: 'managed ≈ "manager"', color: "text-purple-700" },
+            { label: "דומה", desc: 'managment ≈ "management"', color: "text-orange-700" },
+          ].map((m, i) => (
+            <div key={i} className={`flex items-center gap-2 ${m.color}`}>
+              <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <strong>{m.label}</strong>: {m.desc}
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text='גשו ל"התאמת קורות חיים" בסרגל הניווט הצידי' />
+          <Step num={2} text="גררו קבצי PDF או DOCX לאזור הגרירה — ניתן מספר קבצים בו-זמנית" />
+          <Step num={3} text='לחצו "התחל ניתוח" — המערכת תחלץ טקסט ותתאים מול כל המשרות' />
+          <Step num={4} text="לכל קורות חיים תראו ציון לכל משרה ואילו מילות מפתח זוהו" />
         </div>
       </div>
     ),
