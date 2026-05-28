@@ -43,7 +43,9 @@ export default function CandidatesPage() {
     if (result.id) {
       toast.success("המועמד נוצר בהצלחה");
     } else {
-      toast.error(typeof result.error === "string" ? result.error : "שגיאה ביצירת מועמד");
+      const msg = typeof result.error === "string" ? result.error : "שגיאה ביצירת מועמד";
+      toast.error(msg);
+      throw new Error(msg);
     }
   };
 

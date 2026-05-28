@@ -66,3 +66,16 @@ export function useUploadCV(candidateId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["candidate", candidateId] }),
   });
 }
+
+export function useDeleteCV(candidateId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const r = await fetch(`${API}/${candidateId}/cv`, { method: "DELETE" });
+      const json = await r.json();
+      if (!r.ok) throw new Error(json.error || "שגיאה במחיקת קובץ");
+      return json;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["candidate", candidateId] }),
+  });
+}

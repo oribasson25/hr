@@ -78,13 +78,17 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
   };
 
   const handleFormSubmit = async (data: FormData) => {
-    await onSubmit({
-      ...data,
-      cv: cvFile || undefined,
-      appliedForJobId: appliedForJobId && appliedForJobId !== "custom" ? appliedForJobId : undefined,
-      appliedForCustom: appliedForJobId === "custom" ? appliedForCustom : undefined,
-    });
-    handleClose();
+    try {
+      await onSubmit({
+        ...data,
+        cv: cvFile || undefined,
+        appliedForJobId: appliedForJobId && appliedForJobId !== "custom" ? appliedForJobId : undefined,
+        appliedForCustom: appliedForJobId === "custom" ? appliedForCustom : undefined,
+      });
+      handleClose();
+    } catch {
+      // onSubmit threw — keep the form open so the user can correct the data
+    }
   };
 
   return (

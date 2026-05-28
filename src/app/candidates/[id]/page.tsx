@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell } from "lucide-react";
+import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import AppShell from "@/components/layout/AppShell";
 import CandidateForm from "@/components/candidates/CandidateForm";
 import CVPreview from "@/components/cv/CVPreview";
 import ReminderForm from "@/components/reminders/ReminderForm";
-import { useCandidate, useUpdateCandidate, useDeleteCandidate } from "@/lib/api/candidates";
+import { useCandidate, useUpdateCandidate, useDeleteCandidate, useUploadCV, useDeleteCV } from "@/lib/api/candidates";
 import { useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/notes";
 import { useCreateReminder } from "@/lib/api/reminders";
 
@@ -39,9 +39,13 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
 
+  const cvInputRef = useRef<HTMLInputElement>(null);
+
   const { data: candidate, isLoading } = useCandidate(id);
   const updateCandidate = useUpdateCandidate(id);
   const deleteCandidate = useDeleteCandidate();
+  const uploadCV = useUploadCV(id);
+  const deleteCV = useDeleteCV(id);
   const createNote = useCreateNote(id);
   const updateNote = useUpdateNote(id);
   const deleteNote = useDeleteNote(id);
@@ -63,6 +67,35 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
     await deleteCandidate.mutateAsync(id);
     toast.success("המועמד נמחק");
     router.push("/candidates");
+  };
+
+  const handleReplaceCV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["pdf", "docx"].includes(ext || "")) {
+      toast.error("סוג קובץ לא נתמך (PDF או DOCX בלבד)");
+      return;
+    }
+    const fd = new FormData();
+    fd.append("cv", file);
+    try {
+      await uploadCV.mutateAsync(fd);
+      toast.success("קורות החיים הוחלפו בהצלחה");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שגיאה בהעלאת קובץ");
+    }
+    e.target.value = "";
+  };
+
+  const handleDeleteCV = async () => {
+    if (!confirm("האם למחוק את קורות החיים?")) return;
+    try {
+      await deleteCV.mutateAsync();
+      toast.success("קורות החיים נמחקו");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שגיאה במחיקת קובץ");
+    }
   };
 
   const handleCreateReminder = async (data: { title: string; dueDate?: string | null }) => {
@@ -186,14 +219,63 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
             </div>
 
             <div className="bg-white rounded-2xl border border-brand-gray-border p-4 space-y-2">
-              <Button
-                onClick={() => setShowCV(true)}
-                className="w-full rounded-xl gap-2"
-                variant={candidate.cvFilePath ? "default" : "outline"}
-              >
-                <FileText className="w-4 h-4" />
-                {candidate.cvFilePath ? "צפייה בקורות חיים" : "ללא קורות חיים"}
-              </Button>
+              {candidate.cvFilePath ? (
+                <>
+                  <Button
+                    onClick={() => setShowCV(true)}
+                    className="w-full rounded-xl gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    צפייה בקורות חיים
+                  </Button>
+                  <input
+                    ref={cvInputRef}
+                    type="file"
+                    accept=".pdf,.docx"
+                    className="hidden"
+                    onChange={handleReplaceCV}
+                  />
+                  <Button
+                    onClick={() => cvInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full rounded-xl gap-2"
+                    size="sm"
+                    disabled={uploadCV.isPending}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {uploadCV.isPending ? "מחליף..." : "החלף קורות חיים"}
+                  </Button>
+                  <Button
+                    onClick={handleDeleteCV}
+                    variant="ghost"
+                    className="w-full rounded-xl text-orange-500 hover:text-orange-600 hover:bg-orange-50 gap-2"
+                    size="sm"
+                    disabled={deleteCV.isPending}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    מחיקת קורות חיים
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <input
+                    ref={cvInputRef}
+                    type="file"
+                    accept=".pdf,.docx"
+                    className="hidden"
+                    onChange={handleReplaceCV}
+                  />
+                  <Button
+                    onClick={() => cvInputRef.current?.click()}
+                    variant="outline"
+                    className="w-full rounded-xl gap-2"
+                    disabled={uploadCV.isPending}
+                  >
+                    <FileText className="w-4 h-4" />
+                    {uploadCV.isPending ? "מעלה..." : "העלאת קורות חיים"}
+                  </Button>
+                </>
+              )}
               <Button
                 onClick={() => setShowReminderForm(true)}
                 variant="outline"

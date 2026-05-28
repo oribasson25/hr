@@ -3,6 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { put } from "@vercel/blob";
 import { cuid } from "@/lib/cuid";
 
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const candidate = await prisma.candidate.update({
+      where: { id },
+      data: { cvFileName: null, cvFilePath: null, cvFileType: null },
+    });
+    return NextResponse.json(candidate);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

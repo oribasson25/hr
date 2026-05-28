@@ -77,6 +77,14 @@ export async function POST(req: NextRequest) {
 
     const data = candidateSchema.parse(fields);
 
+    const existingByPhone = await prisma.candidate.findFirst({ where: { phone: data.phone } });
+    if (existingByPhone) {
+      return NextResponse.json(
+        { error: `מועמד עם מספר טלפון זה כבר קיים במערכת (${existingByPhone.fullName})` },
+        { status: 409 }
+      );
+    }
+
     const cvFile = formData.get("cv") as File | null;
     let cvFileName: string | undefined;
     let cvFilePath: string | undefined;
