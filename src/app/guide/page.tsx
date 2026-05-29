@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Users, FileText, Bell, Download, ChevronRight, ChevronLeft,
   Plus, Search, Kanban, Upload, RefreshCw, Trash2, AlertCircle, BookOpen,
-  CheckCircle, Phone, ScanSearch, Settings, Sparkles,
+  CheckCircle, Phone, ScanSearch,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
@@ -300,35 +300,6 @@ const SLIDES: Slide[] = [
           <Step num={2} text="גררו קבצי PDF או DOCX לאזור הגרירה — ניתן מספר קבצים בו-זמנית" />
           <Step num={3} text='לחצו "התחל ניתוח" — המערכת תחלץ טקסט ותתאים מול כל המשרות' />
           <Step num={4} text="לכל קורות חיים תראו ציון לכל משרה ואילו מילות מפתח זוהו" />
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 10,
-    title: "הגדרות מערכת",
-    subtitle: "הפעלת ניתוח AI",
-    icon: <Settings className="w-10 h-10" />,
-    color: "from-violet-500 to-purple-400",
-    content: (
-      <div className="space-y-5">
-        <div className="flex items-start gap-3 bg-purple-50 border border-purple-200 rounded-2xl p-4">
-          <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-purple-900 mb-1">ניתוח AI</p>
-            <p className="text-sm text-purple-700 leading-relaxed">
-              הוסיפו מפתח Anthropic API להפעלת ניתוח AI בעמוד ההתאמה. הציון הסופי יחשב כ-40% מילות מפתח + 60% AI, ותקבלו הסבר טקסטואלי לכל התאמה.
-            </p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <Step num={1} text='גשו ל"הגדרות" בסרגל הניווט הצידי' />
-          <Step num={2} text='הזינו את מפתח ה-API מ-console.anthropic.com' />
-          <Step num={3} text='לחצו "שמור מפתח" — המפתח נשמר בצורה מאובטחת בבסיס הנתונים' />
-          <Step num={4} text='חזרו לעמוד "התאמת קורות חיים" — הניתוח יכלול כעת שלב AI אוטומטית' />
-        </div>
-        <div className="bg-brand-gray-light rounded-2xl p-4 text-sm text-brand-gray">
-          <strong className="text-brand-black">ללא מפתח API</strong> — המערכת ממשיכה לעבוד עם התאמת מילות מפתח בלבד, ללא עלות נוספת.
         </div>
       </div>
     ),

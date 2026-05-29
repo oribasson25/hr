@@ -57,12 +57,6 @@ model Note {
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 }
 
-model Setting {
-  key       String   @id
-  value     String
-  updatedAt DateTime @updatedAt
-}
-
 model Reminder {
   id          String    @id @default(cuid())
   title       String
