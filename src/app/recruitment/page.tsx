@@ -15,8 +15,14 @@ const STAGE_META = {
 
 type StageKey = keyof typeof STAGE_META;
 
+const KANBAN_META: Record<string, { label: string; color: string }> = {
+  leading: { label: "מוביל", color: "bg-brand-yellow text-brand-black" },
+  candidate: { label: "מועמד", color: "bg-blue-100 text-blue-800" },
+};
+
 interface Assignment {
   id: string;
+  status: string;
   recruitmentStage: StageKey;
   startDate: string | null;
   createdAt: string;
@@ -99,10 +105,15 @@ export default function RecruitmentPage() {
                   <div key={a.id} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
                     <button
                       onClick={() => router.push(`/candidates/${a.candidate?.id}`)}
-                      className="font-semibold text-brand-black hover:underline text-sm w-40 text-right flex-shrink-0"
+                      className="font-semibold text-brand-black hover:underline text-sm w-40 text-right flex-shrink-0 text-right"
                     >
                       {a.candidate?.fullName}
                     </button>
+                    {KANBAN_META[a.status] && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${KANBAN_META[a.status].color}`}>
+                        {KANBAN_META[a.status].label}
+                      </span>
+                    )}
                     <button
                       onClick={() => router.push(`/jobs/${a.job?.id}`)}
                       className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate"

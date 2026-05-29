@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const assignments = await prisma.jobAssignment.findMany({
+      where: { status: { notIn: ["not_relevant", "future"] } },
       include: {
         candidate: { select: { id: true, fullName: true, phone: true, email: true } },
         job: { select: { id: true, title: true, status: true } },
