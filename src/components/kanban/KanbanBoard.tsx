@@ -47,11 +47,17 @@ export default function KanbanBoard({ job }: Props) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const hiredCount = useMemo(
+    () => job.assignments.filter((a) => a.recruitmentStage === "hired").length,
+    [job.assignments]
+  );
+
   const columns = useMemo(() => {
     const map: Record<AssignmentStatus, (JobAssignment & { candidate: Candidate })[]> = {
       leading: [], candidate: [], not_relevant: [], future: [],
     };
     job.assignments.forEach((a) => {
+      if (a.recruitmentStage === "hired") return;
       if (a.status in map) map[a.status as AssignmentStatus].push(a);
     });
     Object.keys(map).forEach((k) => {

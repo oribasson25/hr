@@ -93,6 +93,7 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   }
 
   const isFilled = job.status === "filled";
+  const hiredCount = job.assignments?.filter((a) => a.recruitmentStage === "hired").length ?? 0;
 
   return (
     <AppShell>
@@ -128,6 +129,11 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
             <Badge className={`rounded-full ${isFilled ? "bg-brand-black text-white" : "bg-brand-yellow text-brand-black"}`}>
               {isFilled ? "נסגרה" : "פתוחה"}
             </Badge>
+            {hiredCount > 0 && (
+              <Badge className="rounded-full bg-green-100 text-green-700 border border-green-200">
+                גויסו: {hiredCount}
+              </Badge>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-input bg-background hover:bg-accent transition-colors">

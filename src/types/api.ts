@@ -17,6 +17,7 @@ export interface Job {
     not_relevant: number;
     future: number;
   };
+  assignments?: (JobAssignment & { candidate: Candidate })[];
 }
 
 export interface Candidate {
