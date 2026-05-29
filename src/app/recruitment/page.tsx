@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Users, FileText, MessageSquare, Gift, CheckCircle, XCircle, TrendingUp, Clock } from "lucide-react";
+import { Users, FileText, MessageSquare, Gift, CheckCircle, XCircle, TrendingUp, Clock, ChevronDown } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import { useRecruitmentData } from "@/lib/api/recruitment";
 
@@ -34,17 +35,27 @@ interface Assignment {
 export default function RecruitmentPage() {
   const router = useRouter();
   const { data, isLoading } = useRecruitmentData();
+  const [jobFilter, setJobFilter] = useState("");
 
   const stages = data?.stages as Record<StageKey, Assignment[]> | undefined;
   const recentHires = data?.recentHires as Assignment[] | undefined;
 
+  const allActive: Assignment[] = useMemo(() => stages
+    ? [...(stages.cv_received ?? []), ...(stages.interview ?? []), ...(stages.offer ?? [])]
+    : [], [stages]);
+
+  const jobOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return allActive
+      .map((a) => ({ id: a.job?.id ?? "", title: a.job?.title ?? "" }))
+      .filter((j) => j.id && !seen.has(j.id) && seen.add(j.id));
+  }, [allActive]);
+
+  const filtered = jobFilter ? allActive.filter((a) => a.job?.id === jobFilter) : allActive;
+
   const activeCount = stages
     ? (stages.cv_received?.length ?? 0) + (stages.interview?.length ?? 0) + (stages.offer?.length ?? 0)
     : 0;
-
-  const allActive: Assignment[] = stages
-    ? [...(stages.cv_received ?? []), ...(stages.interview ?? []), ...(stages.offer ?? [])]
-    : [];
 
   return (
     <AppShell>
@@ -86,19 +97,38 @@ export default function RecruitmentPage() {
 
         {/* Pipeline Table */}
         <div className="bg-white rounded-2xl border border-brand-gray-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-brand-gray-border flex items-center gap-2">
-            <Clock className="w-4 h-4 text-brand-gray" />
+          <div className="px-6 py-4 border-b border-brand-gray-border flex items-center gap-3 flex-wrap">
+            <Clock className="w-4 h-4 text-brand-gray flex-shrink-0" />
             <h2 className="font-semibold text-brand-black">כל התהליכים הפתוחים</h2>
-            <span className="mr-auto text-sm text-brand-gray">{activeCount} תהליכים</span>
+            <div className="mr-auto flex items-center gap-3">
+              {jobOptions.length > 0 && (
+                <div className="relative">
+                  <select
+                    value={jobFilter}
+                    onChange={(e) => setJobFilter(e.target.value)}
+                    className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer"
+                  >
+                    <option value="">כל המשרות</option>
+                    {jobOptions.map((j) => (
+                      <option key={j.id} value={j.id}>{j.title}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-gray pointer-events-none" />
+                </div>
+              )}
+              <span className="text-sm text-brand-gray">{filtered.length} תהליכים</span>
+            </div>
           </div>
 
           {isLoading ? (
             <div className="p-8 text-center text-brand-gray animate-pulse">טוען...</div>
           ) : allActive.length === 0 ? (
             <div className="p-8 text-center text-brand-gray">אין תהליכים פתוחים כרגע</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-brand-gray">אין תהליכים למשרה זו</div>
           ) : (
             <div className="divide-y divide-brand-gray-border">
-              {allActive.map((a) => {
+              {filtered.map((a) => {
                 const stage = STAGE_META[a.recruitmentStage];
                 const Icon = stage.icon;
                 return (
