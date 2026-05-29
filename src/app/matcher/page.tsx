@@ -6,7 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, File, X, CheckCircle, AlertCircle,
   Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp, History, Trash2,
+  Eye, Download, ExternalLink,
 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const PDFViewer = dynamic(() => import("@/components/cv/PDFViewer"), { ssr: false });
+const DocxViewer = dynamic(() => import("@/components/cv/DocxViewer"), { ssr: false });
 import { Button } from "@/components/ui/button";
 import AppShell from "@/components/layout/AppShell";
 import { useJobs } from "@/lib/api/jobs";
@@ -33,6 +38,8 @@ interface HistoryJobMatch {
 interface HistoryEntry {
   fileName: string;
   jobMatches: HistoryJobMatch[];
+  cvFilePath?: string | null;
+  cvFileType?: string | null;
 }
 
 interface HistoryRecord {
@@ -49,6 +56,7 @@ export default function MatcherPage() {
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>(0);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [previewEntry, setPreviewEntry] = useState<HistoryEntry | null>(null);
 
   const { data: jobs = [] } = useJobs();
 
@@ -201,6 +209,7 @@ export default function MatcherPage() {
                           key={record.id}
                           record={record}
                           onDelete={() => handleDeleteHistory(record.id)}
+                          onPreview={(entry) => setPreviewEntry(entry)}
                         />
                       ))}
                     </div>
@@ -251,6 +260,10 @@ export default function MatcherPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {previewEntry && (
+        <CVPreviewModal entry={previewEntry} onClose={() => setPreviewEntry(null)} />
+      )}
     </AppShell>
   );
 }
@@ -260,9 +273,11 @@ export default function MatcherPage() {
 function HistoryRow({
   record,
   onDelete,
+  onPreview,
 }: {
   record: HistoryRecord;
   onDelete: () => void;
+  onPreview: (entry: HistoryEntry) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const date = new Date(record.createdAt).toLocaleString("he-IL", {
@@ -325,10 +340,21 @@ function HistoryRow({
         <div className="px-6 pb-4 space-y-3">
           {record.entries.map((entry, i) => (
             <div key={i} className="bg-brand-gray-light rounded-xl p-3 space-y-2">
-              <p className="text-xs font-semibold text-brand-black flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-brand-gray flex-shrink-0" />
-                {entry.fileName}
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-brand-black flex items-center gap-1.5 min-w-0">
+                  <FileText className="w-3.5 h-3.5 text-brand-gray flex-shrink-0" />
+                  <span className="truncate">{entry.fileName}</span>
+                </p>
+                {entry.cvFilePath && (
+                  <button
+                    onClick={() => onPreview(entry)}
+                    className="flex items-center gap-1 text-xs text-brand-yellow font-medium hover:underline flex-shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    תצוגה מקדימה
+                  </button>
+                )}
+              </div>
               <div className="space-y-1">
                 {entry.jobMatches.slice(0, 5).map((m, j) => (
                   <div key={j} className="flex items-center justify-between text-xs gap-2">
@@ -346,6 +372,60 @@ function HistoryRow({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── CV Preview Modal ─────────────────────────────────────────────────────────
+
+function CVPreviewModal({ entry, onClose }: { entry: HistoryEntry; onClose: () => void }) {
+  const isPdf = entry.cvFileType === "pdf" || entry.fileName.toLowerCase().endsWith(".pdf");
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/40" onClick={onClose} />
+      <div className="w-[60vw] max-w-3xl bg-white shadow-2xl flex flex-col h-full">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-gray-border flex-shrink-0">
+          <div className="min-w-0">
+            <h2 className="font-bold text-brand-black text-lg truncate">{entry.fileName}</h2>
+            <p className="text-sm text-brand-gray">
+              {entry.jobMatches.length} משרות נותחו
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href={entry.cvFilePath!}
+              download={entry.fileName}
+              className="p-2 rounded-xl hover:bg-brand-gray-light transition-colors text-brand-gray hover:text-brand-black"
+              title="הורדה"
+            >
+              <Download className="w-5 h-5" />
+            </a>
+            <a
+              href={entry.cvFilePath!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl hover:bg-brand-gray-light transition-colors text-brand-gray hover:text-brand-black"
+              title="פתח בטאב חדש"
+            >
+              <ExternalLink className="w-5 h-5" />
+            </a>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-brand-gray-light transition-colors text-brand-gray hover:text-brand-black"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          {isPdf ? (
+            <PDFViewer filePath={entry.cvFilePath!} />
+          ) : (
+            <DocxViewer filePath={entry.cvFilePath!} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
