@@ -1,6 +1,9 @@
 "use client";
 
+"use client";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, FileText, File, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import AppShell from "@/components/layout/AppShell";
@@ -126,6 +129,7 @@ export default function CVsPage() {
 }
 
 function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => void }) {
+  const router = useRouter();
   const isPdf = candidate.cvFileType === "pdf";
 
   return (
@@ -140,7 +144,12 @@ function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => v
           <File className="w-7 h-7 text-blue-500" />
         )}
       </div>
-      <p className="font-semibold text-brand-black text-sm mb-1 truncate">{candidate.fullName}</p>
+      <button
+        onClick={(e) => { e.stopPropagation(); router.push(`/candidates/${candidate.id}`); }}
+        className="font-semibold text-brand-black text-sm mb-1 truncate hover:underline w-full text-center"
+      >
+        {candidate.fullName}
+      </button>
       <p className="text-xs text-brand-gray mb-1">{candidate.phone}</p>
       <p className="text-xs text-brand-gray mb-2 uppercase">{candidate.cvFileType}</p>
 
