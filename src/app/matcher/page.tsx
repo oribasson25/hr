@@ -5,23 +5,15 @@ import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, File, X, CheckCircle, AlertCircle,
-  Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp, Sparkles,
+  Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp, Sparkles, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppShell from "@/components/layout/AppShell";
 import { useJobs } from "@/lib/api/jobs";
-import {
-  extractAllFiles,
-  type ExtractionResult,
-} from "@/lib/text-extraction";
-import {
-  matchCVAgainstAllJobs,
-  SYNONYM_MAP,
-  type CVMatchResult,
-  type MatchedKeyword,
-} from "@/lib/cv-matcher";
+import { extractAllFiles, type ExtractionResult } from "@/lib/text-extraction";
+import type { CVMatchResult } from "@/lib/cv-matcher";
 
-type Phase = "idle" | "files_selected" | "extracting" | "scoring" | "ai_scoring" | "results";
+type Phase = "idle" | "files_selected" | "extracting" | "ai_scoring" | "results";
 type ScoreFilter = 0 | 40 | 70;
 
 export default function MatcherPage() {
@@ -31,7 +23,7 @@ export default function MatcherPage() {
   const [cvResults, setCvResults] = useState<CVMatchResult[]>([]);
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>(0);
   const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
-  const [hasApiKey, setHasApiKey] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
 
   const { data: jobs = [] } = useJobs();
 
@@ -66,70 +58,64 @@ export default function MatcherPage() {
 
   const handleAnalyze = async () => {
     if (!files.length || !jobs.length) return;
+
     setPhase("extracting");
     setExtractionResults(files.map((f) => ({ file: f, text: "", status: "pending" })));
 
-    const extracted = await extractAllFiles(files, (results) => {
-      setExtractionResults([...results]);
-    });
+    const extracted = await extractAllFiles(files, (r) => setExtractionResults([...r]));
 
-    setPhase("scoring");
-
-    const results = extracted
-      .filter((r) => r.status === "done")
-      .map((r) => matchCVAgainstAllJobs(r.file, r.text, jobs, SYNONYM_MAP));
-
+    const successful = extracted.filter((r) => r.status === "done");
     const errors = extracted
       .filter((r) => r.status === "error")
       .map((r): CVMatchResult => ({ file: r.file, cvText: "", jobResults: [] }));
 
-    if (!hasApiKey) {
-      setCvResults([...results, ...errors]);
-      setPhase("results");
-      return;
-    }
+    // Build initial results with score 0
+    const results: CVMatchResult[] = successful.map((r) => ({
+      file: r.file,
+      cvText: r.text,
+      jobResults: jobs.map((job) => ({
+        job,
+        score: 0,
+        matchedKeywords: [],
+        totalKeywords: 0,
+        scoreCategory: "low" as const,
+      })),
+    }));
 
-    // AI scoring phase — only for job pairs with keyword score >= 30%
-    const pairsToScore = results.flatMap((cv) =>
-      cv.jobResults.filter((jr) => jr.score >= 30)
-    );
-    const aiTotal = pairsToScore.length;
-    setAiProgress({ done: 0, total: aiTotal });
+    const total = results.length * jobs.length;
+    setAiProgress({ done: 0, total });
+    setCvResults([...results, ...errors]);
     setPhase("ai_scoring");
 
-    let aiDone = 0;
+    let done = 0;
     for (const cvResult of results) {
       for (const jobResult of cvResult.jobResults) {
-        if (jobResult.score >= 30) {
-          try {
-            const res = await fetch("/api/ai-score", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                cvText: cvResult.cvText,
-                requirements: jobResult.job.requirements,
-                jobTitle: jobResult.job.title,
-              }),
-            });
-            if (res.ok) {
-              const { score: aiScore, reasoning } = await res.json();
-              jobResult.aiScore = aiScore;
-              jobResult.aiReasoning = reasoning;
-              jobResult.finalScore = Math.round(jobResult.score * 0.4 + aiScore * 0.6);
-            }
-          } catch {
-            // AI failed for this pair — use keyword score as fallback
+        try {
+          const res = await fetch("/api/ai-score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cvText: cvResult.cvText,
+              requirements: jobResult.job.requirements,
+              jobTitle: jobResult.job.title,
+            }),
+          });
+          if (res.ok) {
+            const { score, reasoning } = await res.json();
+            jobResult.aiScore = score;
+            jobResult.aiReasoning = reasoning;
+            jobResult.score = score;
+            jobResult.scoreCategory =
+              score >= 70 ? "high" : score >= 40 ? "medium" : "low";
           }
-          aiDone++;
-          setAiProgress({ done: aiDone, total: aiTotal });
-        } else {
-          jobResult.finalScore = jobResult.score;
+        } catch {
+          // leave score=0
         }
+        done++;
+        setAiProgress({ done, total });
       }
-      // Re-sort by finalScore
-      cvResult.jobResults.sort(
-        (a, b) => (b.finalScore ?? b.score) - (a.finalScore ?? a.score)
-      );
+
+      cvResult.jobResults.sort((a, b) => b.score - a.score);
       setCvResults([...results, ...errors]);
     }
 
@@ -152,7 +138,7 @@ export default function MatcherPage() {
           <div>
             <h1 className="text-3xl font-bold text-brand-black">התאמת קורות חיים</h1>
             <p className="text-brand-gray mt-1">
-              גרור קבצי PDF/DOCX — המערכת תתאים אותם לכל המשרות הקיימות
+              גרור קבצי PDF/DOCX — המערכת תנתח בעזרת AI ותתאים לכל המשרות
             </p>
           </div>
           {phase === "results" && (
@@ -197,19 +183,6 @@ export default function MatcherPage() {
             </motion.div>
           )}
 
-          {phase === "scoring" && (
-            <motion.div
-              key="scoring"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-32 gap-4"
-            >
-              <Loader2 className="w-10 h-10 text-brand-yellow animate-spin" />
-              <p className="text-brand-gray font-medium">מנתח התאמות...</p>
-            </motion.div>
-          )}
-
           {phase === "ai_scoring" && (
             <motion.div
               key="ai_scoring"
@@ -222,7 +195,7 @@ export default function MatcherPage() {
                 <Loader2 className="w-10 h-10 text-brand-yellow animate-spin" />
                 <Sparkles className="w-4 h-4 text-purple-500 absolute -top-1 -right-1" />
               </div>
-              <p className="text-brand-gray font-medium">מנתח עם AI...</p>
+              <p className="text-brand-black font-semibold">מנתח עם AI...</p>
               <div className="w-64 space-y-2">
                 <div className="flex justify-between text-xs text-brand-gray">
                   <span>{aiProgress.done} מתוך {aiProgress.total} ניתוחים</span>
@@ -259,7 +232,6 @@ export default function MatcherPage() {
                 results={cvResults}
                 scoreFilter={scoreFilter}
                 onFilterChange={setScoreFilter}
-                hasAi={hasApiKey}
               />
             </motion.div>
           )}
@@ -288,8 +260,10 @@ function DropZoneArea({
   onRemove: (name: string) => void;
   onAnalyze: () => void;
   jobCount: number;
-  hasApiKey: boolean;
+  hasApiKey: boolean | null;
 }) {
+  const apiKeyMissing = hasApiKey === false;
+
   return (
     <div className="space-y-4">
       <div
@@ -308,15 +282,14 @@ function DropZoneArea({
         <p className="text-sm text-brand-gray">PDF או DOCX · ניתן לגרור מספר קבצים בו-זמנית</p>
       </div>
 
-      {!hasApiKey && (
-        <div className="flex items-center gap-2 text-sm text-brand-gray bg-white border border-brand-gray-border rounded-xl px-4 py-3">
-          <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
-          <span>
-            ניתוח AI לא פעיל —{" "}
-            <a href="/settings" className="text-purple-600 underline hover:text-purple-800">
-              הוסף מפתח API בהגדרות
-            </a>{" "}
-            לקבלת ניקוד מדויק יותר
+      {apiKeyMissing && (
+        <div className="flex items-center gap-3 text-sm bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <span className="text-amber-800">
+            נדרש מפתח Anthropic API —{" "}
+            <a href="/settings" className="underline font-medium hover:text-amber-900 inline-flex items-center gap-1">
+              <Settings className="w-3 h-3" /> הגדרות
+            </a>
           </span>
         </div>
       )}
@@ -350,20 +323,21 @@ function DropZoneArea({
           {jobCount === 0 ? (
             <div className="flex items-center gap-2 text-orange-600 text-sm mt-2 p-3 bg-orange-50 rounded-xl">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>אין משרות במערכת — הוסיפו משרות תחילה כדי לבצע התאמה</span>
+              <span>אין משרות במערכת — הוסיפו משרות תחילה</span>
+            </div>
+          ) : apiKeyMissing ? (
+            <div className="flex items-center gap-2 text-amber-700 text-sm mt-2 p-3 bg-amber-50 rounded-xl">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>הוסיפו מפתח API בהגדרות לפני הניתוח</span>
             </div>
           ) : (
             <Button
               onClick={onAnalyze}
+              disabled={hasApiKey === null}
               className="w-full mt-2 rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold gap-2"
             >
               <ScanSearch className="w-4 h-4" />
-              התחל ניתוח מול {jobCount} משרות
-              {hasApiKey && (
-                <span className="flex items-center gap-1 text-xs font-normal opacity-70">
-                  <Sparkles className="w-3 h-3" /> + AI
-                </span>
-              )}
+              התחל ניתוח AI מול {jobCount} משרות
             </Button>
           )}
         </div>
@@ -425,12 +399,10 @@ function ResultsView({
   results,
   scoreFilter,
   onFilterChange,
-  hasAi,
 }: {
   results: CVMatchResult[];
   scoreFilter: ScoreFilter;
   onFilterChange: (v: ScoreFilter) => void;
-  hasAi: boolean;
 }) {
   const filters: { label: string; value: ScoreFilter }[] = [
     { label: "הכל", value: 0 },
@@ -458,13 +430,9 @@ function ResultsView({
             {f.label}
           </button>
         ))}
-        <span className="text-sm text-brand-gray mr-auto">
+        <span className="text-sm text-brand-gray mr-auto flex items-center gap-1.5">
           {successful.length} קורות חיים נותחו
-          {hasAi && (
-            <span className="mr-2 text-purple-500 font-medium text-xs inline-flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> + AI
-            </span>
-          )}
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
         </span>
       </div>
 
@@ -501,12 +469,8 @@ function ResultsView({
 function CVResultCard({ result, scoreFilter }: { result: CVMatchResult; scoreFilter: number }) {
   const [expanded, setExpanded] = useState(true);
 
-  const filteredJobs = result.jobResults.filter(
-    (r) => (r.finalScore ?? r.score) >= scoreFilter
-  );
-  const topScore = result.jobResults[0]
-    ? (result.jobResults[0].finalScore ?? result.jobResults[0].score)
-    : 0;
+  const filteredJobs = result.jobResults.filter((r) => r.score >= scoreFilter);
+  const topScore = result.jobResults[0]?.score ?? 0;
   const isPdf = result.file.name.toLowerCase().endsWith(".pdf");
 
   return (
@@ -536,64 +500,29 @@ function CVResultCard({ result, scoreFilter }: { result: CVMatchResult; scoreFil
               אין משרות מעל הסף הנבחר
             </p>
           ) : (
-            filteredJobs.map((jobResult) => {
-              const displayScore = jobResult.finalScore ?? jobResult.score;
-              return (
-                <div key={jobResult.job.id} className="px-6 py-4 space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="font-semibold text-brand-black truncate">
-                        {jobResult.job.title}
+            filteredJobs.map((jobResult) => (
+              <div key={jobResult.job.id} className="px-6 py-4 space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="font-semibold text-brand-black truncate">
+                      {jobResult.job.title}
+                    </span>
+                    {jobResult.job.status === "filled" && (
+                      <span className="text-xs bg-brand-black text-white px-2 py-0.5 rounded-full flex-shrink-0">
+                        נסגרה
                       </span>
-                      {jobResult.job.status === "filled" && (
-                        <span className="text-xs bg-brand-black text-white px-2 py-0.5 rounded-full flex-shrink-0">
-                          נסגרה
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <ScoreBadge score={displayScore} />
-                      {jobResult.aiScore !== undefined && (
-                        <span
-                          className="text-xs text-brand-gray"
-                          title={`מילות מפתח: ${jobResult.score}% | AI: ${jobResult.aiScore}%`}
-                        >
-                          <Sparkles className="w-3 h-3 text-purple-400 inline" />
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
-
-                  {jobResult.aiScore !== undefined && (
-                    <div className="text-xs text-brand-gray flex gap-3">
-                      <span>מילות מפתח: <strong>{jobResult.score}%</strong></span>
-                      <span>AI: <strong>{jobResult.aiScore}%</strong></span>
-                    </div>
-                  )}
-
-                  {jobResult.aiReasoning && (
-                    <p className="text-xs text-purple-700 italic bg-purple-50 px-3 py-1.5 rounded-lg">
-                      {jobResult.aiReasoning}
-                    </p>
-                  )}
-
-                  {jobResult.totalKeywords === 0 ? (
-                    <p className="text-xs text-brand-gray">אין דרישות מוגדרות למשרה זו</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {jobResult.matchedKeywords.map((kw, i) => (
-                        <KeywordChip key={i} kw={kw} />
-                      ))}
-                      {jobResult.totalKeywords - jobResult.matchedKeywords.length > 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                          +{jobResult.totalKeywords - jobResult.matchedKeywords.length} לא נמצאו
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <ScoreBadge score={jobResult.score} />
                 </div>
-              );
-            })
+
+                {jobResult.aiReasoning && (
+                  <p className="text-xs text-purple-700 italic bg-purple-50 px-3 py-1.5 rounded-lg">
+                    {jobResult.aiReasoning}
+                  </p>
+                )}
+              </div>
+            ))
           )}
         </div>
       )}
@@ -615,34 +544,6 @@ function ScoreBadge({ score, label }: { score: number; label?: string }) {
     <span className={`text-sm font-bold px-3 py-1 rounded-full border flex-shrink-0 ${colorClass}`}>
       {label && <span className="font-normal text-xs mr-1">{label}:</span>}
       {score}%
-    </span>
-  );
-}
-
-// ─── Keyword Chip ─────────────────────────────────────────────────────────────
-
-const MATCH_TYPE_STYLE: Record<MatchedKeyword["matchType"], string> = {
-  exact: "bg-green-50 text-green-700 border-green-200",
-  synonym: "bg-blue-50 text-blue-700 border-blue-200",
-  stem: "bg-purple-50 text-purple-700 border-purple-200",
-  fuzzy: "bg-orange-50 text-orange-700 border-orange-200",
-};
-
-const MATCH_TYPE_LABEL: Record<MatchedKeyword["matchType"], string> = {
-  exact: "מדויק",
-  synonym: "נרדף",
-  stem: "גזרה",
-  fuzzy: "דומה",
-};
-
-function KeywordChip({ kw }: { kw: MatchedKeyword }) {
-  return (
-    <span
-      className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 ${MATCH_TYPE_STYLE[kw.matchType]}`}
-      title={`נמצא: "${kw.cvToken}" — סוג: ${MATCH_TYPE_LABEL[kw.matchType]}`}
-    >
-      {kw.keyword}
-      <span className="opacity-60 text-[10px]">({MATCH_TYPE_LABEL[kw.matchType]})</span>
     </span>
   );
 }
