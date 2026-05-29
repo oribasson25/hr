@@ -33,6 +33,7 @@ interface HistoryJobMatch {
   jobId: string;
   jobTitle: string;
   score: number;
+  matchedKeywords?: { keyword: string; matchType: string }[];
 }
 
 interface HistoryEntry {
@@ -132,6 +133,10 @@ export default function MatcherPage() {
           jobId: jr.job.id,
           jobTitle: jr.job.title,
           score: jr.score,
+          matchedKeywords: jr.matchedKeywords.map((kw) => ({
+            keyword: kw.keyword,
+            matchType: kw.matchType,
+          })),
         })),
         cvFilePath: uploadResults[i]?.filePath ?? null,
         cvFileType: uploadResults[i]?.fileType ?? null,
@@ -283,6 +288,13 @@ export default function MatcherPage() {
   );
 }
 
+const HISTORY_CHIP_STYLE: Record<string, string> = {
+  exact: "bg-green-50 text-green-700 border-green-200",
+  synonym: "bg-blue-50 text-blue-700 border-blue-200",
+  stem: "bg-purple-50 text-purple-700 border-purple-200",
+  fuzzy: "bg-orange-50 text-orange-700 border-orange-200",
+};
+
 // ─── History Row ──────────────────────────────────────────────────────────────
 
 function HistoryRow({
@@ -370,11 +382,25 @@ function HistoryRow({
                   </button>
                 )}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {entry.jobMatches.slice(0, 5).map((m, j) => (
-                  <div key={j} className="flex items-center justify-between text-xs gap-2">
-                    <span className="text-brand-gray truncate">{m.jobTitle}</span>
-                    <ScoreBadge score={m.score} small />
+                  <div key={j} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs gap-2">
+                      <span className="text-brand-gray truncate font-medium">{m.jobTitle}</span>
+                      <ScoreBadge score={m.score} small />
+                    </div>
+                    {m.matchedKeywords && m.matchedKeywords.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {m.matchedKeywords.map((kw, k) => (
+                          <span
+                            key={k}
+                            className={`text-[10px] px-1.5 py-0.5 rounded-full border ${HISTORY_CHIP_STYLE[kw.matchType] ?? "bg-gray-50 text-gray-600 border-gray-200"}`}
+                          >
+                            {kw.keyword}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {entry.jobMatches.length > 5 && (
