@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar } from "lucide-react";
+import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +20,7 @@ import { useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/notes";
 import { useCreateReminder } from "@/lib/api/reminders";
 import { useUpdateRecruitmentStage } from "@/lib/api/recruitment";
 import type { RecruitmentStage } from "@/types/api";
+import { loadCallers, type Caller } from "@/app/settings/page";
 
 const STATUS_LABELS: Record<string, string> = {
   leading: "מוביל",
@@ -45,6 +46,14 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const [editingNoteContent, setEditingNoteContent] = useState("");
   const [stageDialog, setStageDialog] = useState<{ assignmentId: string; type: "interview" | "hired"; jobTitle: string } | null>(null);
   const [stageDate, setStageDate] = useState("");
+  const [callDialog, setCallDialog] = useState(false);
+  const [callers, setCallers] = useState<Caller[]>([]);
+  const [selectedCallerId, setSelectedCallerId] = useState("");
+  const [isDialing, setIsDialing] = useState(false);
+
+  useEffect(() => {
+    setCallers(loadCallers());
+  }, [callDialog]);
 
   const cvInputRef = useRef<HTMLInputElement>(null);
 
@@ -110,6 +119,27 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
     const result = await createReminder.mutateAsync({ ...data, candidateId: id });
     if (result.id) toast.success("התזכורת נוספה");
     else toast.error("שגיאה בהוספת תזכורת");
+  };
+
+  const handleDial = async () => {
+    const caller = callers.find((c) => c.id === selectedCallerId);
+    if (!caller || !candidate) return;
+    setIsDialing(true);
+    try {
+      const res = await fetch(`/api/dial?phone=${encodeURIComponent(candidate.phone)}&extension=${encodeURIComponent(caller.extension)}`);
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`מחייג ל-${candidate.phone} משלוחה ${caller.extension}`);
+        setCallDialog(false);
+        setSelectedCallerId("");
+      } else {
+        toast.error("שגיאה בחיוג: " + (data.error || ""));
+      }
+    } catch {
+      toast.error("שגיאה בחיוג");
+    } finally {
+      setIsDialing(false);
+    }
   };
 
   const handleStageDialogConfirm = async () => {
@@ -207,9 +237,16 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
               </div>
 
               <div className="space-y-2 text-sm">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <span className="text-brand-gray w-16 flex-shrink-0">טלפון:</span>
                   <a href={`tel:${candidate.phone}`} className="text-brand-black hover:underline">{candidate.phone}</a>
+                  <button
+                    onClick={() => { setSelectedCallerId(""); setCallDialog(true); }}
+                    className="p-1 rounded-lg text-brand-gray hover:text-green-600 hover:bg-green-50 transition-colors"
+                    title="חייג דרך מרכזיה"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-brand-gray w-16 flex-shrink-0">אימייל:</span>
@@ -551,6 +588,61 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
         loading={createReminder.isPending}
         contextLabel={candidate.fullName}
       />
+
+      <Dialog open={callDialog} onOpenChange={(open) => { if (!open) setCallDialog(false); }}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="w-5 h-5 text-green-500" />
+              חיוג דרך מרכזיה
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3">
+            <p className="text-sm text-brand-gray">
+              מחייג אל: <span className="font-semibold text-brand-black">{candidate?.phone}</span>
+            </p>
+            {callers.length === 0 ? (
+              <div className="p-3 bg-brand-yellow-soft rounded-xl text-sm text-brand-gray">
+                אין מתקשרים מוגדרים.{" "}
+                <a href="/settings" className="underline text-brand-black">הגדר מתקשרים בהגדרות</a>
+              </div>
+            ) : (
+              <div>
+                <Label className="text-sm text-brand-gray mb-2 block">מי מתקשר?</Label>
+                <select
+                  value={selectedCallerId}
+                  onChange={(e) => setSelectedCallerId(e.target.value)}
+                  className="w-full appearance-none px-4 py-2 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow"
+                >
+                  <option value="">בחר מתקשר...</option>
+                  {callers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} (שלוחה {c.extension})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button
+              onClick={handleDial}
+              disabled={!selectedCallerId || isDialing}
+              className="rounded-xl bg-green-500 text-white hover:bg-green-600 font-semibold gap-2"
+            >
+              <Phone className="w-4 h-4" />
+              {isDialing ? "מחייג..." : "חייג"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setCallDialog(false)}
+              className="rounded-xl"
+            >
+              ביטול
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!stageDialog} onOpenChange={(open) => { if (!open) { setStageDialog(null); setStageDate(""); } }}>
         <DialogContent className="max-w-sm rounded-2xl">

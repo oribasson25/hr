@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Users, FileText, Bell, Download, ChevronRight, ChevronLeft,
   Plus, Search, Kanban, Upload, RefreshCw, Trash2, AlertCircle, BookOpen,
-  CheckCircle, Phone, ScanSearch, GitMerge,
+  CheckCircle, Phone, ScanSearch, GitMerge, Settings,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
@@ -332,6 +332,31 @@ const SLIDES: Slide[] = [
           <Step num={2} text="גררו קבצי PDF או DOCX לאזור הגרירה — ניתן מספר קבצים בו-זמנית" />
           <Step num={3} text='לחצו "התחל ניתוח" — המערכת תחלץ טקסט ותתאים מול כל המשרות' />
           <Step num={4} text="לכל קורות חיים תראו ציון לכל משרה ואילו מילות מפתח זוהו" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 11,
+    title: "חיוג דרך מרכזיה",
+    subtitle: "חיוג ישיר למועמד בלחיצה אחת",
+    icon: <Phone className="w-10 h-10" />,
+    color: "from-green-500 to-emerald-400",
+    content: (
+      <div className="space-y-5">
+        <div className="bg-brand-gray-light rounded-2xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-brand-black flex items-center gap-2">
+            <Settings className="w-4 h-4" /> הגדרת מתקשרים
+          </p>
+          <p className="text-sm text-brand-gray">
+            לפני השימוש, הגדירו את רשימת המתקשרים — שם + שלוחה — בדף <strong>הגדרות</strong> שבסרגל הניווט.
+          </p>
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text='גשו להגדרות → הוסיפו מתקשר עם שם ושלוחה' />
+          <Step num={2} text='כנסו לעמוד מועמד וחפשו את אייקון הטלפון ליד מספר הטלפון' />
+          <Step num={3} text='לחצו — יפתח חלון "מי מתקשר?" ובחרו את שמכם' />
+          <Step num={4} text='לחצו "חייג" — המרכזיה תחבר את השיחה לשלוחה שלכם' />
         </div>
       </div>
     ),
