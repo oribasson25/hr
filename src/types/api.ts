@@ -42,6 +42,7 @@ export interface JobAssignment {
   status: AssignmentStatus;
   position: number;
   recruitmentStage: RecruitmentStage;
+  startDate: string | null;
   createdAt: string;
   updatedAt: string;
   job?: Job;

@@ -3,11 +3,14 @@
 import { use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw } from "lucide-react";
+import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import AppShell from "@/components/layout/AppShell";
 import CandidateForm from "@/components/candidates/CandidateForm";
 import CVPreview from "@/components/cv/CVPreview";
@@ -40,6 +43,8 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
+  const [stageDialog, setStageDialog] = useState<{ assignmentId: string; type: "interview" | "hired"; jobTitle: string } | null>(null);
+  const [stageDate, setStageDate] = useState("");
 
   const cvInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,6 +110,36 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
     const result = await createReminder.mutateAsync({ ...data, candidateId: id });
     if (result.id) toast.success("התזכורת נוספה");
     else toast.error("שגיאה בהוספת תזכורת");
+  };
+
+  const handleStageDialogConfirm = async () => {
+    if (!stageDialog) return;
+    const { assignmentId, type, jobTitle } = stageDialog;
+    const dateISO = stageDate ? new Date(stageDate).toISOString() : null;
+
+    if (type === "interview") {
+      await updateRecruitmentStage.mutateAsync({ id: assignmentId, recruitmentStage: "interview" });
+      if (dateISO && candidate) {
+        await createReminder.mutateAsync({
+          title: `ראיון — ${candidate.fullName} | ${jobTitle}`,
+          dueDate: dateISO,
+          candidateId: id,
+        });
+        toast.success("השלב עודכן והתזכורת נוצרה");
+      } else {
+        toast.success("השלב עודכן לראיון");
+      }
+    } else {
+      await updateRecruitmentStage.mutateAsync({
+        id: assignmentId,
+        recruitmentStage: "hired",
+        startDate: dateISO,
+      });
+      toast.success("המועמד סומן כגויס");
+    }
+
+    setStageDialog(null);
+    setStageDate("");
   };
 
   const handleAddNote = async () => {
@@ -429,7 +464,14 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                               return (
                                 <div key={stage.key} className="flex items-center flex-1">
                                   <button
-                                    onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: stage.key })}
+                                    onClick={() => {
+                                      if (stage.key === "interview") {
+                                        setStageDate("");
+                                        setStageDialog({ assignmentId: assignment.id, type: "interview", jobTitle: assignment.job?.title ?? "" });
+                                      } else {
+                                        updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: stage.key });
+                                      }
+                                    }}
                                     className={`flex-1 text-center py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
                                       isActive
                                         ? "bg-brand-yellow text-brand-black shadow-sm"
@@ -450,7 +492,10 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
 
                           <div className="flex gap-2">
                             <button
-                              onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: "hired" })}
+                              onClick={() => {
+                                setStageDate("");
+                                setStageDialog({ assignmentId: assignment.id, type: "hired", jobTitle: assignment.job?.title ?? "" });
+                              }}
                               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                                 currentStage === "hired"
                                   ? "bg-green-500 text-white"
@@ -506,6 +551,47 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
         loading={createReminder.isPending}
         contextLabel={candidate.fullName}
       />
+
+      <Dialog open={!!stageDialog} onOpenChange={(open) => { if (!open) { setStageDialog(null); setStageDate(""); } }}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-brand-yellow" />
+              {stageDialog?.type === "interview" ? "תאריך הראיון" : "תאריך התחלה"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Label className="text-sm text-brand-gray mb-2 block">
+              {stageDialog?.type === "interview"
+                ? "בחרי תאריך לראיון — תיווצר תזכורת אוטומטית"
+                : "מתי המועמד מתחיל לעבוד?"}
+            </Label>
+            <Input
+              type="date"
+              value={stageDate}
+              onChange={(e) => setStageDate(e.target.value)}
+              className="rounded-xl"
+              dir="ltr"
+            />
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button
+              onClick={handleStageDialogConfirm}
+              disabled={updateRecruitmentStage.isPending || createReminder.isPending}
+              className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold"
+            >
+              {stageDialog?.type === "interview" ? "קביעת ראיון" : "אישור גיוס"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => { setStageDialog(null); setStageDate(""); }}
+              className="rounded-xl"
+            >
+              ביטול
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

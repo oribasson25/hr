@@ -18,6 +18,7 @@ type StageKey = keyof typeof STAGE_META;
 interface Assignment {
   id: string;
   recruitmentStage: StageKey;
+  startDate: string | null;
   createdAt: string;
   updatedAt: string;
   candidate?: { id: string; fullName: string };
@@ -153,9 +154,16 @@ export default function RecruitmentPage() {
                   >
                     {a.job?.title}
                   </button>
-                  <span className="text-xs text-green-600 font-medium flex-shrink-0 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
-                    גויס {new Date(a.updatedAt).toLocaleDateString("he-IL")}
-                  </span>
+                  <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
+                    <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                      גויס {new Date(a.updatedAt).toLocaleDateString("he-IL")}
+                    </span>
+                    {a.startDate && (
+                      <span className="text-xs text-brand-gray">
+                        מתחיל {new Date(a.startDate).toLocaleDateString("he-IL")}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
