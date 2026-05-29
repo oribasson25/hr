@@ -57,6 +57,12 @@ model Note {
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 }
 
+model CvMatchHistory {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  entries   Json
+}
+
 model Reminder {
   id          String    @id @default(cuid())
   title       String

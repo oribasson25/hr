@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, File, X, CheckCircle, AlertCircle,
-  Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp,
+  Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp, History, Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppShell from "@/components/layout/AppShell";
@@ -24,14 +24,40 @@ import {
 type Phase = "idle" | "files_selected" | "extracting" | "scoring" | "results";
 type ScoreFilter = 0 | 40 | 70;
 
+interface HistoryJobMatch {
+  jobId: string;
+  jobTitle: string;
+  score: number;
+}
+
+interface HistoryEntry {
+  fileName: string;
+  jobMatches: HistoryJobMatch[];
+}
+
+interface HistoryRecord {
+  id: string;
+  createdAt: string;
+  entries: HistoryEntry[];
+}
+
 export default function MatcherPage() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [files, setFiles] = useState<File[]>([]);
   const [extractionResults, setExtractionResults] = useState<ExtractionResult[]>([]);
   const [cvResults, setCvResults] = useState<CVMatchResult[]>([]);
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>(0);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { data: jobs = [] } = useJobs();
+
+  const loadHistory = useCallback(async () => {
+    const res = await fetch("/api/cv-match-history");
+    if (res.ok) setHistory(await res.json());
+  }, []);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const onDrop = useCallback((accepted: File[]) => {
     setFiles((prev) => {
@@ -71,13 +97,35 @@ export default function MatcherPage() {
       .filter((r) => r.status === "done")
       .map((r) => matchCVAgainstAllJobs(r.file, r.text, jobs, SYNONYM_MAP));
 
-    // Include errored files with empty results so user sees them
     const errors = extracted
       .filter((r) => r.status === "error")
       .map((r): CVMatchResult => ({ file: r.file, cvText: "", jobResults: [] }));
 
     setCvResults([...results, ...errors]);
     setPhase("results");
+
+    // Save to history
+    const entries: HistoryEntry[] = results.map((r) => ({
+      fileName: r.file.name,
+      jobMatches: r.jobResults.map((jr) => ({
+        jobId: jr.job.id,
+        jobTitle: jr.job.title,
+        score: jr.score,
+      })),
+    }));
+    if (entries.length > 0) {
+      await fetch("/api/cv-match-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries }),
+      });
+      loadHistory();
+    }
+  };
+
+  const handleDeleteHistory = async (id: string) => {
+    await fetch(`/api/cv-match-history?id=${id}`, { method: "DELETE" });
+    setHistory((prev) => prev.filter((r) => r.id !== id));
   };
 
   const handleReset = () => {
@@ -99,11 +147,7 @@ export default function MatcherPage() {
             </p>
           </div>
           {phase === "results" && (
-            <Button
-              onClick={handleReset}
-              variant="outline"
-              className="rounded-xl gap-2"
-            >
+            <Button onClick={handleReset} variant="outline" className="rounded-xl gap-2">
               <RotateCcw className="w-4 h-4" />
               ניתוח חדש
             </Button>
@@ -118,6 +162,7 @@ export default function MatcherPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
+              className="space-y-6"
             >
               <DropZoneArea
                 getRootProps={getRootProps}
@@ -128,6 +173,40 @@ export default function MatcherPage() {
                 onAnalyze={handleAnalyze}
                 jobCount={jobs.length}
               />
+
+              {history.length > 0 && (
+                <div className="bg-white rounded-2xl border border-brand-gray-border overflow-hidden">
+                  <button
+                    onClick={() => setHistoryOpen((v) => !v)}
+                    className="w-full flex items-center gap-3 px-6 py-4 text-right hover:bg-brand-gray-light transition-colors"
+                  >
+                    <History className="w-5 h-5 text-brand-gray flex-shrink-0" />
+                    <span className="flex-1 font-semibold text-brand-black">
+                      היסטוריית ניתוחים
+                    </span>
+                    <span className="text-xs text-brand-gray bg-brand-gray-light px-2 py-0.5 rounded-full">
+                      {history.length}
+                    </span>
+                    {historyOpen ? (
+                      <ChevronUp className="w-4 h-4 text-brand-gray flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-brand-gray flex-shrink-0" />
+                    )}
+                  </button>
+
+                  {historyOpen && (
+                    <div className="border-t border-brand-gray-border divide-y divide-brand-gray-border">
+                      {history.map((record) => (
+                        <HistoryRow
+                          key={record.id}
+                          record={record}
+                          onDelete={() => handleDeleteHistory(record.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -173,6 +252,101 @@ export default function MatcherPage() {
         </AnimatePresence>
       </div>
     </AppShell>
+  );
+}
+
+// ─── History Row ──────────────────────────────────────────────────────────────
+
+function HistoryRow({
+  record,
+  onDelete,
+}: {
+  record: HistoryRecord;
+  onDelete: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const date = new Date(record.createdAt).toLocaleString("he-IL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const topScores = record.entries.flatMap((e) =>
+    e.jobMatches.slice(0, 1).map((m) => ({ fileName: e.fileName, ...m }))
+  );
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 px-6 py-3">
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-3 flex-1 text-right"
+        >
+          <div className="flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-brand-black">
+                {record.entries.length} קורות חיים
+              </span>
+              <span className="text-xs text-brand-gray">{date}</span>
+            </div>
+            {!expanded && topScores.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {topScores.slice(0, 3).map((s, i) => (
+                  <span key={i} className="text-xs text-brand-gray">
+                    <span className="font-medium text-brand-black truncate">{s.fileName}</span>
+                    {" → "}
+                    <ScoreBadge score={s.score} small />
+                  </span>
+                ))}
+                {topScores.length > 3 && (
+                  <span className="text-xs text-brand-gray">+{topScores.length - 3} עוד</span>
+                )}
+              </div>
+            )}
+          </div>
+          {expanded ? (
+            <ChevronUp className="w-3.5 h-3.5 text-brand-gray flex-shrink-0" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 text-brand-gray flex-shrink-0" />
+          )}
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-1.5 rounded-lg text-brand-gray hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+          title="מחק"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="px-6 pb-4 space-y-3">
+          {record.entries.map((entry, i) => (
+            <div key={i} className="bg-brand-gray-light rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-brand-black flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-brand-gray flex-shrink-0" />
+                {entry.fileName}
+              </p>
+              <div className="space-y-1">
+                {entry.jobMatches.slice(0, 5).map((m, j) => (
+                  <div key={j} className="flex items-center justify-between text-xs gap-2">
+                    <span className="text-brand-gray truncate">{m.jobTitle}</span>
+                    <ScoreBadge score={m.score} small />
+                  </div>
+                ))}
+                {entry.jobMatches.length > 5 && (
+                  <p className="text-xs text-brand-gray">
+                    +{entry.jobMatches.length - 5} משרות נוספות
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -455,7 +629,7 @@ function CVResultCard({ result, scoreFilter }: { result: CVMatchResult; scoreFil
 
 // ─── Score Badge ──────────────────────────────────────────────────────────────
 
-function ScoreBadge({ score, label }: { score: number; label?: string }) {
+function ScoreBadge({ score, label, small }: { score: number; label?: string; small?: boolean }) {
   const colorClass =
     score >= 70
       ? "bg-green-100 text-green-800 border-green-200"
@@ -464,7 +638,11 @@ function ScoreBadge({ score, label }: { score: number; label?: string }) {
       : "bg-red-100 text-red-800 border-red-200";
 
   return (
-    <span className={`text-sm font-bold px-3 py-1 rounded-full border flex-shrink-0 ${colorClass}`}>
+    <span
+      className={`font-bold rounded-full border flex-shrink-0 ${colorClass} ${
+        small ? "text-xs px-1.5 py-0.5" : "text-sm px-3 py-1"
+      }`}
+    >
       {label && <span className="font-normal text-xs mr-1">{label}:</span>}
       {score}%
     </span>
