@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, Users, FileText, Bell, LogOut, Download, BookOpen, ScanSearch } from "lucide-react";
+import { Briefcase, Users, FileText, Bell, LogOut, Download, BookOpen, ScanSearch, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingRemindersCount } from "@/lib/api/reminders";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ const staticNavItems = [
   { href: "/cvs", label: "כל קורות החיים", icon: FileText },
   { href: "/matcher", label: "התאמת קורות חיים", icon: ScanSearch },
   { href: "/guide", label: "מדריך למשתמש", icon: BookOpen },
+  { href: "/settings", label: "הגדרות", icon: Settings },
 ];
 
 export default function Sidebar() {

@@ -12,6 +12,9 @@ export interface JobMatchResult {
   matchedKeywords: MatchedKeyword[];
   totalKeywords: number;
   scoreCategory: "high" | "medium" | "low";
+  aiScore?: number;
+  aiReasoning?: string;
+  finalScore?: number;
 }
 
 export interface CVMatchResult {

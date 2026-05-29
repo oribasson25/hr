@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, File, X, CheckCircle, AlertCircle,
-  Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp,
+  Loader2, ScanSearch, RotateCcw, ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppShell from "@/components/layout/AppShell";
@@ -21,7 +21,7 @@ import {
   type MatchedKeyword,
 } from "@/lib/cv-matcher";
 
-type Phase = "idle" | "files_selected" | "extracting" | "scoring" | "results";
+type Phase = "idle" | "files_selected" | "extracting" | "scoring" | "ai_scoring" | "results";
 type ScoreFilter = 0 | 40 | 70;
 
 export default function MatcherPage() {
@@ -30,8 +30,16 @@ export default function MatcherPage() {
   const [extractionResults, setExtractionResults] = useState<ExtractionResult[]>([]);
   const [cvResults, setCvResults] = useState<CVMatchResult[]>([]);
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>(0);
+  const [aiProgress, setAiProgress] = useState({ done: 0, total: 0 });
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   const { data: jobs = [] } = useJobs();
+
+  useEffect(() => {
+    fetch("/api/settings?key=ANTHROPIC_API_KEY")
+      .then((r) => r.json())
+      .then((d) => setHasApiKey(!!d.value));
+  }, []);
 
   const onDrop = useCallback((accepted: File[]) => {
     setFiles((prev) => {
@@ -71,12 +79,60 @@ export default function MatcherPage() {
       .filter((r) => r.status === "done")
       .map((r) => matchCVAgainstAllJobs(r.file, r.text, jobs, SYNONYM_MAP));
 
-    // Include errored files with empty results so user sees them
     const errors = extracted
       .filter((r) => r.status === "error")
       .map((r): CVMatchResult => ({ file: r.file, cvText: "", jobResults: [] }));
 
-    setCvResults([...results, ...errors]);
+    if (!hasApiKey) {
+      setCvResults([...results, ...errors]);
+      setPhase("results");
+      return;
+    }
+
+    // AI scoring phase — only for job pairs with keyword score >= 30%
+    const pairsToScore = results.flatMap((cv) =>
+      cv.jobResults.filter((jr) => jr.score >= 30)
+    );
+    const aiTotal = pairsToScore.length;
+    setAiProgress({ done: 0, total: aiTotal });
+    setPhase("ai_scoring");
+
+    let aiDone = 0;
+    for (const cvResult of results) {
+      for (const jobResult of cvResult.jobResults) {
+        if (jobResult.score >= 30) {
+          try {
+            const res = await fetch("/api/ai-score", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                cvText: cvResult.cvText,
+                requirements: jobResult.job.requirements,
+                jobTitle: jobResult.job.title,
+              }),
+            });
+            if (res.ok) {
+              const { score: aiScore, reasoning } = await res.json();
+              jobResult.aiScore = aiScore;
+              jobResult.aiReasoning = reasoning;
+              jobResult.finalScore = Math.round(jobResult.score * 0.4 + aiScore * 0.6);
+            }
+          } catch {
+            // AI failed for this pair — use keyword score as fallback
+          }
+          aiDone++;
+          setAiProgress({ done: aiDone, total: aiTotal });
+        } else {
+          jobResult.finalScore = jobResult.score;
+        }
+      }
+      // Re-sort by finalScore
+      cvResult.jobResults.sort(
+        (a, b) => (b.finalScore ?? b.score) - (a.finalScore ?? a.score)
+      );
+      setCvResults([...results, ...errors]);
+    }
+
     setPhase("results");
   };
 
@@ -86,6 +142,7 @@ export default function MatcherPage() {
     setExtractionResults([]);
     setCvResults([]);
     setScoreFilter(0);
+    setAiProgress({ done: 0, total: 0 });
   };
 
   return (
@@ -99,11 +156,7 @@ export default function MatcherPage() {
             </p>
           </div>
           {phase === "results" && (
-            <Button
-              onClick={handleReset}
-              variant="outline"
-              className="rounded-xl gap-2"
-            >
+            <Button onClick={handleReset} variant="outline" className="rounded-xl gap-2">
               <RotateCcw className="w-4 h-4" />
               ניתוח חדש
             </Button>
@@ -127,6 +180,7 @@ export default function MatcherPage() {
                 onRemove={removeFile}
                 onAnalyze={handleAnalyze}
                 jobCount={jobs.length}
+                hasApiKey={hasApiKey}
               />
             </motion.div>
           )}
@@ -156,6 +210,44 @@ export default function MatcherPage() {
             </motion.div>
           )}
 
+          {phase === "ai_scoring" && (
+            <motion.div
+              key="ai_scoring"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-32 gap-5"
+            >
+              <div className="relative">
+                <Loader2 className="w-10 h-10 text-brand-yellow animate-spin" />
+                <Sparkles className="w-4 h-4 text-purple-500 absolute -top-1 -right-1" />
+              </div>
+              <p className="text-brand-gray font-medium">מנתח עם AI...</p>
+              <div className="w-64 space-y-2">
+                <div className="flex justify-between text-xs text-brand-gray">
+                  <span>{aiProgress.done} מתוך {aiProgress.total} ניתוחים</span>
+                  <span>
+                    {aiProgress.total > 0
+                      ? Math.round((aiProgress.done / aiProgress.total) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div className="h-2 bg-brand-gray-light rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-purple-400 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: aiProgress.total > 0
+                        ? `${(aiProgress.done / aiProgress.total) * 100}%`
+                        : "0%",
+                    }}
+                    transition={{ ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {phase === "results" && (
             <motion.div
               key="results"
@@ -167,6 +259,7 @@ export default function MatcherPage() {
                 results={cvResults}
                 scoreFilter={scoreFilter}
                 onFilterChange={setScoreFilter}
+                hasAi={hasApiKey}
               />
             </motion.div>
           )}
@@ -186,6 +279,7 @@ function DropZoneArea({
   onRemove,
   onAnalyze,
   jobCount,
+  hasApiKey,
 }: {
   getRootProps: () => React.HTMLAttributes<HTMLDivElement>;
   getInputProps: () => React.InputHTMLAttributes<HTMLInputElement>;
@@ -194,6 +288,7 @@ function DropZoneArea({
   onRemove: (name: string) => void;
   onAnalyze: () => void;
   jobCount: number;
+  hasApiKey: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -213,6 +308,19 @@ function DropZoneArea({
         <p className="text-sm text-brand-gray">PDF או DOCX · ניתן לגרור מספר קבצים בו-זמנית</p>
       </div>
 
+      {!hasApiKey && (
+        <div className="flex items-center gap-2 text-sm text-brand-gray bg-white border border-brand-gray-border rounded-xl px-4 py-3">
+          <Sparkles className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          <span>
+            ניתוח AI לא פעיל —{" "}
+            <a href="/settings" className="text-purple-600 underline hover:text-purple-800">
+              הוסף מפתח API בהגדרות
+            </a>{" "}
+            לקבלת ניקוד מדויק יותר
+          </span>
+        </div>
+      )}
+
       {files.length > 0 && (
         <div className="bg-white rounded-2xl border border-brand-gray-border p-4 space-y-2">
           <p className="text-sm font-semibold text-brand-black mb-3">
@@ -229,9 +337,7 @@ function DropZoneArea({
                 <File className="w-4 h-4 text-blue-500 flex-shrink-0" />
               )}
               <span className="flex-1 text-sm text-brand-black truncate">{f.name}</span>
-              <span className="text-xs text-brand-gray">
-                {(f.size / 1024).toFixed(0)} KB
-              </span>
+              <span className="text-xs text-brand-gray">{(f.size / 1024).toFixed(0)} KB</span>
               <button
                 onClick={(e) => { e.stopPropagation(); onRemove(f.name); }}
                 className="p-1 rounded-lg hover:bg-brand-gray-border text-brand-gray hover:text-red-500 transition-colors"
@@ -253,6 +359,11 @@ function DropZoneArea({
             >
               <ScanSearch className="w-4 h-4" />
               התחל ניתוח מול {jobCount} משרות
+              {hasApiKey && (
+                <span className="flex items-center gap-1 text-xs font-normal opacity-70">
+                  <Sparkles className="w-3 h-3" /> + AI
+                </span>
+              )}
             </Button>
           )}
         </div>
@@ -314,10 +425,12 @@ function ResultsView({
   results,
   scoreFilter,
   onFilterChange,
+  hasAi,
 }: {
   results: CVMatchResult[];
   scoreFilter: ScoreFilter;
   onFilterChange: (v: ScoreFilter) => void;
+  hasAi: boolean;
 }) {
   const filters: { label: string; value: ScoreFilter }[] = [
     { label: "הכל", value: 0 },
@@ -347,6 +460,11 @@ function ResultsView({
         ))}
         <span className="text-sm text-brand-gray mr-auto">
           {successful.length} קורות חיים נותחו
+          {hasAi && (
+            <span className="mr-2 text-purple-500 font-medium text-xs inline-flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> + AI
+            </span>
+          )}
         </span>
       </div>
 
@@ -383,8 +501,12 @@ function ResultsView({
 function CVResultCard({ result, scoreFilter }: { result: CVMatchResult; scoreFilter: number }) {
   const [expanded, setExpanded] = useState(true);
 
-  const filteredJobs = result.jobResults.filter((r) => r.score >= scoreFilter);
-  const topScore = result.jobResults[0]?.score ?? 0;
+  const filteredJobs = result.jobResults.filter(
+    (r) => (r.finalScore ?? r.score) >= scoreFilter
+  );
+  const topScore = result.jobResults[0]
+    ? (result.jobResults[0].finalScore ?? result.jobResults[0].score)
+    : 0;
   const isPdf = result.file.name.toLowerCase().endsWith(".pdf");
 
   return (
@@ -414,38 +536,64 @@ function CVResultCard({ result, scoreFilter }: { result: CVMatchResult; scoreFil
               אין משרות מעל הסף הנבחר
             </p>
           ) : (
-            filteredJobs.map((jobResult) => (
-              <div key={jobResult.job.id} className="px-6 py-4 space-y-2">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="font-semibold text-brand-black truncate">
-                      {jobResult.job.title}
-                    </span>
-                    {jobResult.job.status === "filled" && (
-                      <span className="text-xs bg-brand-black text-white px-2 py-0.5 rounded-full flex-shrink-0">
-                        נסגרה
+            filteredJobs.map((jobResult) => {
+              const displayScore = jobResult.finalScore ?? jobResult.score;
+              return (
+                <div key={jobResult.job.id} className="px-6 py-4 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="font-semibold text-brand-black truncate">
+                        {jobResult.job.title}
                       </span>
-                    )}
+                      {jobResult.job.status === "filled" && (
+                        <span className="text-xs bg-brand-black text-white px-2 py-0.5 rounded-full flex-shrink-0">
+                          נסגרה
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <ScoreBadge score={displayScore} />
+                      {jobResult.aiScore !== undefined && (
+                        <span
+                          className="text-xs text-brand-gray"
+                          title={`מילות מפתח: ${jobResult.score}% | AI: ${jobResult.aiScore}%`}
+                        >
+                          <Sparkles className="w-3 h-3 text-purple-400 inline" />
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <ScoreBadge score={jobResult.score} />
-                </div>
 
-                {jobResult.totalKeywords === 0 ? (
-                  <p className="text-xs text-brand-gray">אין דרישות מוגדרות למשרה זו</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {jobResult.matchedKeywords.map((kw, i) => (
-                      <KeywordChip key={i} kw={kw} />
-                    ))}
-                    {jobResult.totalKeywords - jobResult.matchedKeywords.length > 0 && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-                        +{jobResult.totalKeywords - jobResult.matchedKeywords.length} לא נמצאו
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))
+                  {jobResult.aiScore !== undefined && (
+                    <div className="text-xs text-brand-gray flex gap-3">
+                      <span>מילות מפתח: <strong>{jobResult.score}%</strong></span>
+                      <span>AI: <strong>{jobResult.aiScore}%</strong></span>
+                    </div>
+                  )}
+
+                  {jobResult.aiReasoning && (
+                    <p className="text-xs text-purple-700 italic bg-purple-50 px-3 py-1.5 rounded-lg">
+                      {jobResult.aiReasoning}
+                    </p>
+                  )}
+
+                  {jobResult.totalKeywords === 0 ? (
+                    <p className="text-xs text-brand-gray">אין דרישות מוגדרות למשרה זו</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {jobResult.matchedKeywords.map((kw, i) => (
+                        <KeywordChip key={i} kw={kw} />
+                      ))}
+                      {jobResult.totalKeywords - jobResult.matchedKeywords.length > 0 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                          +{jobResult.totalKeywords - jobResult.matchedKeywords.length} לא נמצאו
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
