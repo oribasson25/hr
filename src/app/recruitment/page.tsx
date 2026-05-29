@@ -26,7 +26,7 @@ function PipelineBar({ stage }: { stage: string }) {
   const isRejected = stage === "rejected";
 
   return (
-    <div className="flex items-start w-full" dir="ltr">
+    <div className="flex items-start w-full">
       {PIPELINE_STEPS.map((step, i) => {
         const done = i < currentIdx;
         const active = !isRejected && i === currentIdx;
