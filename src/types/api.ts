@@ -1,5 +1,6 @@
 export type JobStatus = "open" | "filled";
 export type AssignmentStatus = "leading" | "candidate" | "not_relevant" | "future";
+export type RecruitmentStage = "cv_received" | "interview" | "offer" | "hired" | "rejected";
 
 export interface Job {
   id: string;
@@ -40,7 +41,9 @@ export interface JobAssignment {
   candidateId: string;
   status: AssignmentStatus;
   position: number;
+  recruitmentStage: RecruitmentStage;
   createdAt: string;
+  updatedAt: string;
   job?: Job;
   candidate?: Candidate;
 }

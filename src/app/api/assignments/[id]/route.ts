@@ -5,6 +5,7 @@ import { z } from "zod";
 const updateSchema = z.object({
   status: z.enum(["leading", "candidate", "not_relevant", "future"]).optional(),
   position: z.number().int().optional(),
+  recruitmentStage: z.enum(["cv_received", "interview", "offer", "hired", "rejected"]).optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -37,12 +37,14 @@ model Candidate {
 }
 
 model JobAssignment {
-  id          String    @id @default(cuid())
-  jobId       String
-  candidateId String
-  status      String    @default("candidate")
-  position    Int       @default(0)
-  createdAt   DateTime  @default(now())
+  id               String    @id @default(cuid())
+  jobId            String
+  candidateId      String
+  status           String    @default("candidate")
+  position         Int       @default(0)
+  recruitmentStage String    @default("cv_received")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
   candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Users, FileText, Bell, Download, ChevronRight, ChevronLeft,
   Plus, Search, Kanban, Upload, RefreshCw, Trash2, AlertCircle, BookOpen,
-  CheckCircle, Phone, ScanSearch,
+  CheckCircle, Phone, ScanSearch, GitMerge,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
@@ -263,6 +263,38 @@ const SLIDES: Slide[] = [
   },
   {
     id: 9,
+    title: "תהליכי גיוס",
+    subtitle: "מעקב אחר כל שלבי הגיוס ממועמד ועד גיוס",
+    icon: <GitMerge className="w-10 h-10" />,
+    color: "from-emerald-500 to-teal-400",
+    content: (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          {[
+            { label: 'קו"ח התקבלו', color: "bg-blue-50 text-blue-700 border-blue-200" },
+            { label: "ראיון", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+            { label: "הצעה", color: "bg-purple-50 text-purple-700 border-purple-200" },
+          ].map((s, i) => (
+            <div key={i} className={`rounded-xl border-2 p-3 ${s.color} font-semibold text-sm`}>
+              {s.label}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border-2 p-3 bg-green-50 text-green-700 border-green-200 font-semibold text-sm text-center">גויס</div>
+          <div className="rounded-xl border-2 p-3 bg-red-50 text-red-700 border-red-200 font-semibold text-sm text-center">נדחה</div>
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text='גשו ל"תהליכי גיוס" בסרגל הניווט הצידי לדשבורד מרכזי' />
+          <Step num={2} text="בעמוד מועמד, תחת לשונית משרות — לחצו על שלב הגיוס הנוכחי לעדכון" />
+          <Step num={3} text="הדשבורד מציג ספירה לפי שלב וכל התהליכים הפתוחים" />
+          <Step num={4} text="גיוסים אחרונים מוצגים עם שם המועמד ושם המשרה" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 10,
     title: "התאמת קורות חיים",
     subtitle: "מצאו את המועמד המתאים לכל משרה ללא AI",
     icon: <ScanSearch className="w-10 h-10" />,

@@ -15,6 +15,8 @@ import ReminderForm from "@/components/reminders/ReminderForm";
 import { useCandidate, useUpdateCandidate, useDeleteCandidate, useUploadCV, useDeleteCV } from "@/lib/api/candidates";
 import { useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/notes";
 import { useCreateReminder } from "@/lib/api/reminders";
+import { useUpdateRecruitmentStage } from "@/lib/api/recruitment";
+import type { RecruitmentStage } from "@/types/api";
 
 const STATUS_LABELS: Record<string, string> = {
   leading: "מוביל",
@@ -50,6 +52,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const updateNote = useUpdateNote(id);
   const deleteNote = useDeleteNote(id);
   const createReminder = useCreateReminder();
+  const updateRecruitmentStage = useUpdateRecruitmentStage(id);
 
   const handleUpdate = async (data: Parameters<typeof CandidateForm>[0]["onSubmit"] extends (d: infer D) => unknown ? D : never) => {
     const result = await updateCandidate.mutateAsync({
@@ -380,30 +383,96 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                 {candidate.assignments?.length === 0 ? (
                   <div className="text-center py-8 text-brand-gray">המועמד אינו משויך למשרות</div>
                 ) : (
-                  <div className="space-y-3">
-                    {candidate.assignments?.map((assignment) => (
-                      <div key={assignment.id} className="bg-white rounded-2xl border border-brand-gray-border p-4 flex items-center justify-between">
-                        <div>
-                          <button
-                            onClick={() => router.push(`/jobs/${assignment.jobId}`)}
-                            className="font-semibold text-brand-black hover:underline text-sm"
-                          >
-                            {assignment.job?.title}
-                          </button>
-                          <p className="text-xs text-brand-gray mt-0.5">
-                            משויך מ-{new Date(assignment.createdAt).toLocaleDateString("he-IL")}
-                          </p>
+                  <div className="space-y-4">
+                    {candidate.assignments?.map((assignment) => {
+                      const STAGES: { key: RecruitmentStage; label: string }[] = [
+                        { key: "cv_received", label: "קו\"ח התקבלו" },
+                        { key: "interview", label: "ראיון" },
+                        { key: "offer", label: "הצעה" },
+                        { key: "hired", label: "גויס" },
+                        { key: "rejected", label: "נדחה" },
+                      ];
+                      const currentStage = (assignment.recruitmentStage || "cv_received") as RecruitmentStage;
+                      const mainStages = STAGES.slice(0, 3);
+                      const currentIdx = STAGES.findIndex((s) => s.key === currentStage);
+                      const isTerminal = currentStage === "hired" || currentStage === "rejected";
+
+                      return (
+                        <div key={assignment.id} className="bg-white rounded-2xl border border-brand-gray-border p-5">
+                          <div className="flex items-start justify-between mb-4">
+                            <div>
+                              <button
+                                onClick={() => router.push(`/jobs/${assignment.jobId}`)}
+                                className="font-semibold text-brand-black hover:underline text-sm"
+                              >
+                                {assignment.job?.title}
+                              </button>
+                              <p className="text-xs text-brand-gray mt-0.5">
+                                משויך מ-{new Date(assignment.createdAt).toLocaleDateString("he-IL")}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {assignment.job?.status === "filled" && (
+                                <Badge className="bg-brand-black text-white text-xs">נסגרה</Badge>
+                              )}
+                              <Badge className={`${STATUS_COLORS[assignment.status]} text-xs rounded-full`}>
+                                {STATUS_LABELS[assignment.status]}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 mb-4">
+                            {mainStages.map((stage, i) => {
+                              const stageIdx = STAGES.findIndex((s) => s.key === stage.key);
+                              const isActive = !isTerminal && stageIdx === currentIdx;
+                              const isDone = !isTerminal && stageIdx < currentIdx;
+                              return (
+                                <div key={stage.key} className="flex items-center flex-1">
+                                  <button
+                                    onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: stage.key })}
+                                    className={`flex-1 text-center py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                                      isActive
+                                        ? "bg-brand-yellow text-brand-black shadow-sm"
+                                        : isDone
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-brand-gray-light text-brand-gray hover:bg-yellow-50"
+                                    }`}
+                                  >
+                                    {stage.label}
+                                  </button>
+                                  {i < mainStages.length - 1 && (
+                                    <div className={`w-4 h-0.5 flex-shrink-0 mx-0.5 ${isDone || isActive ? "bg-green-300" : "bg-brand-gray-border"}`} />
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: "hired" })}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                currentStage === "hired"
+                                  ? "bg-green-500 text-white"
+                                  : "bg-green-50 text-green-700 hover:bg-green-100"
+                              }`}
+                            >
+                              גויס
+                            </button>
+                            <button
+                              onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: "rejected" })}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                currentStage === "rejected"
+                                  ? "bg-red-500 text-white"
+                                  : "bg-red-50 text-red-600 hover:bg-red-100"
+                              }`}
+                            >
+                              נדחה
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {assignment.job?.status === "filled" && (
-                            <Badge className="bg-brand-black text-white text-xs">נסגרה</Badge>
-                          )}
-                          <Badge className={`${STATUS_COLORS[assignment.status]} text-xs rounded-full`}>
-                            {STATUS_LABELS[assignment.status]}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
