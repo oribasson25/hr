@@ -14,26 +14,8 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(entries) || entries.length === 0) {
     return NextResponse.json({ error: "entries required" }, { status: 400 });
   }
-
-  // Resolve cvFilePath for each entry by matching cvFileName in candidates
-  const fileNames = entries.map((e: { fileName: string }) => e.fileName);
-  const candidates = await prisma.candidate.findMany({
-    where: { cvFileName: { in: fileNames } },
-    select: { cvFileName: true, cvFilePath: true, cvFileType: true },
-  });
-  const candidateMap = new Map(candidates.map((c) => [c.cvFileName, c]));
-
-  const enrichedEntries = entries.map((entry: { fileName: string; jobMatches: unknown[] }) => {
-    const candidate = candidateMap.get(entry.fileName);
-    return {
-      ...entry,
-      cvFilePath: candidate?.cvFilePath ?? null,
-      cvFileType: candidate?.cvFileType ?? null,
-    };
-  });
-
   const record = await prisma.cvMatchHistory.create({
-    data: { entries: enrichedEntries as object[] },
+    data: { entries: entries as object[] },
   });
   return NextResponse.json(record, { status: 201 });
 }

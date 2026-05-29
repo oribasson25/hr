@@ -112,16 +112,31 @@ export default function MatcherPage() {
     setCvResults([...results, ...errors]);
     setPhase("results");
 
-    // Save to history
-    const entries: HistoryEntry[] = results.map((r) => ({
-      fileName: r.file.name,
-      jobMatches: r.jobResults.map((jr) => ({
-        jobId: jr.job.id,
-        jobTitle: jr.job.title,
-        score: jr.score,
-      })),
-    }));
-    if (entries.length > 0) {
+    // Upload each file to Blob and save history
+    if (results.length > 0) {
+      const uploadResults = await Promise.all(
+        results.map(async (r) => {
+          try {
+            const fd = new FormData();
+            fd.append("file", r.file);
+            const res = await fetch("/api/matcher-upload", { method: "POST", body: fd });
+            if (res.ok) return await res.json() as { filePath: string; fileType: string };
+          } catch { /* upload failed — preview unavailable */ }
+          return null;
+        })
+      );
+
+      const entries: HistoryEntry[] = results.map((r, i) => ({
+        fileName: r.file.name,
+        jobMatches: r.jobResults.map((jr) => ({
+          jobId: jr.job.id,
+          jobTitle: jr.job.title,
+          score: jr.score,
+        })),
+        cvFilePath: uploadResults[i]?.filePath ?? null,
+        cvFileType: uploadResults[i]?.fileType ?? null,
+      }));
+
       await fetch("/api/cv-match-history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
