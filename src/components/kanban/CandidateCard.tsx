@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileText, MoreVertical, X, GripVertical } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function CandidateCard({ assignment, jobId, isDragging, onPreviewCV }: Props) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSortableDragging } = useSortable({ id: assignment.id });
 
   const deleteAssignment = useDeleteAssignment(jobId);
@@ -64,7 +66,12 @@ export default function CandidateCard({ assignment, jobId, isDragging, onPreview
           <GripVertical className="w-4 h-4" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-brand-black text-sm truncate">{candidate.fullName}</p>
+          <button
+            onClick={() => router.push(`/candidates/${candidate.id}`)}
+            className="font-semibold text-brand-black text-sm truncate hover:underline text-right w-full"
+          >
+            {candidate.fullName}
+          </button>
           <p className="text-xs text-brand-gray truncate">{candidate.phone}</p>
           <p className="text-xs text-brand-gray truncate">{candidate.email}</p>
         </div>
