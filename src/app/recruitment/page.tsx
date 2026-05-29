@@ -6,6 +6,80 @@ import { Users, FileText, MessageSquare, Gift, CheckCircle, XCircle, TrendingUp,
 import AppShell from "@/components/layout/AppShell";
 import { useRecruitmentData } from "@/lib/api/recruitment";
 
+const PIPELINE_STEPS: { key: StageKey; label: string }[] = [
+  { key: "cv_received", label: 'קו"ח' },
+  { key: "interview", label: "ראיון" },
+  { key: "offer", label: "הצעה" },
+  { key: "hired", label: "גויס" },
+];
+
+const STEP_INDEX: Record<string, number> = {
+  cv_received: 0,
+  interview: 1,
+  offer: 2,
+  hired: 3,
+  rejected: -1,
+};
+
+function PipelineBar({ stage }: { stage: string }) {
+  const currentIdx = STEP_INDEX[stage] ?? 0;
+  const isRejected = stage === "rejected";
+
+  return (
+    <div className="flex items-start w-full" dir="ltr">
+      {PIPELINE_STEPS.map((step, i) => {
+        const done = i < currentIdx;
+        const active = !isRejected && i === currentIdx;
+        const colored = done || active;
+        return (
+          <div
+            key={step.key}
+            className={`flex items-start ${i < PIPELINE_STEPS.length - 1 ? "flex-1" : "flex-none"}`}
+          >
+            <div className="flex flex-col items-center flex-shrink-0">
+              <div
+                className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                  done
+                    ? "bg-brand-yellow border-brand-yellow"
+                    : active
+                    ? "bg-brand-yellow border-brand-yellow ring-2 ring-brand-yellow/40 scale-110"
+                    : isRejected
+                    ? "bg-red-200 border-red-300"
+                    : "bg-white border-brand-gray-border"
+                }`}
+              >
+                {done && <div className="w-1 h-1 rounded-full bg-brand-black" />}
+              </div>
+              <span
+                className={`text-[10px] mt-0.5 whitespace-nowrap font-medium leading-tight ${
+                  colored ? "text-brand-black" : isRejected ? "text-red-400" : "text-brand-gray"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+            {i < PIPELINE_STEPS.length - 1 && (
+              <div
+                className={`flex-1 h-0.5 mt-[6px] transition-colors duration-300 ${
+                  done ? "bg-brand-yellow" : "bg-brand-gray-border"
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+      {isRejected && (
+        <div className="flex flex-col items-center flex-shrink-0 mr-2">
+          <div className="w-3.5 h-3.5 rounded-full bg-red-100 border-2 border-red-400 flex items-center justify-center">
+            <XCircle className="w-2.5 h-2.5 text-red-500" />
+          </div>
+          <span className="text-[10px] mt-0.5 text-red-500 font-medium whitespace-nowrap">נדחה</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STAGE_META = {
   cv_received: { label: 'קו"ח התקבלו', icon: FileText, color: "bg-blue-50 text-blue-600 border-blue-100" },
   interview: { label: "ראיון", icon: MessageSquare, color: "bg-yellow-50 text-yellow-700 border-yellow-100" },
@@ -128,38 +202,33 @@ export default function RecruitmentPage() {
             <div className="p-8 text-center text-brand-gray">אין תהליכים למשרה זו</div>
           ) : (
             <div className="divide-y divide-brand-gray-border">
-              {filtered.map((a) => {
-                const stage = STAGE_META[a.recruitmentStage];
-                const Icon = stage.icon;
-                return (
-                  <div key={a.id} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
-                    <button
-                      onClick={() => router.push(`/candidates/${a.candidate?.id}`)}
-                      className="font-semibold text-brand-black hover:underline text-sm w-40 text-right flex-shrink-0 text-right"
-                    >
-                      {a.candidate?.fullName}
-                    </button>
-                    {KANBAN_META[a.status] && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${KANBAN_META[a.status].color}`}>
-                        {KANBAN_META[a.status].label}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => router.push(`/jobs/${a.job?.id}`)}
-                      className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate"
-                    >
-                      {a.job?.title}
-                    </button>
-                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${stage.color} flex-shrink-0`}>
-                      <Icon className="w-3.5 h-3.5" />
-                      {stage.label}
-                    </div>
-                    <span className="text-xs text-brand-gray flex-shrink-0">
-                      {new Date(a.updatedAt).toLocaleDateString("he-IL")}
+              {filtered.map((a) => (
+                <div key={a.id} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
+                  <button
+                    onClick={() => router.push(`/candidates/${a.candidate?.id}`)}
+                    className="font-semibold text-brand-black hover:underline text-sm w-36 text-right flex-shrink-0"
+                  >
+                    {a.candidate?.fullName}
+                  </button>
+                  {KANBAN_META[a.status] && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${KANBAN_META[a.status].color}`}>
+                      {KANBAN_META[a.status].label}
                     </span>
+                  )}
+                  <button
+                    onClick={() => router.push(`/jobs/${a.job?.id}`)}
+                    className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate"
+                  >
+                    {a.job?.title}
+                  </button>
+                  <div className="w-52 flex-shrink-0">
+                    <PipelineBar stage={a.recruitmentStage} />
                   </div>
-                );
-              })}
+                  <span className="text-xs text-brand-gray flex-shrink-0 w-16 text-left">
+                    {new Date(a.updatedAt).toLocaleDateString("he-IL")}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
