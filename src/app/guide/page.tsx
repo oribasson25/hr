@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Users, FileText, Bell, Download, ChevronRight, ChevronLeft,
   Plus, Search, Kanban, Upload, RefreshCw, Trash2, AlertCircle, BookOpen,
-  CheckCircle, Phone, ScanSearch, GitMerge,
+  CheckCircle, Phone, ScanSearch, GitMerge, CalendarCheck,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
@@ -332,6 +332,35 @@ const SLIDES: Slide[] = [
           <Step num={2} text="גררו קבצי PDF או DOCX לאזור הגרירה — ניתן מספר קבצים בו-זמנית" />
           <Step num={3} text='לחצו "התחל ניתוח" — המערכת תחלץ טקסט ותתאים מול כל המשרות' />
           <Step num={4} text="לכל קורות חיים תראו ציון לכל משרה ואילו מילות מפתח זוהו" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 11,
+    title: "ראיונות עבודה",
+    subtitle: "מעקב, סיכום ודירוג ראיונות",
+    icon: <CalendarCheck className="w-10 h-10" />,
+    color: "from-teal-500 to-cyan-400",
+    content: (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { label: "8–10", color: "bg-green-100 text-green-700 border-green-200", desc: "מועמד מצוין" },
+            { label: "5–7", color: "bg-brand-yellow text-brand-black border-yellow-300", desc: "מועמד טוב" },
+            { label: "1–4", color: "bg-red-100 text-red-700 border-red-200", desc: "לא מתאים" },
+          ].map((s, i) => (
+            <div key={i} className={`rounded-xl border-2 p-3 ${s.color}`}>
+              <div className="font-bold mb-1">{s.label}</div>
+              <div className="text-xs opacity-80">{s.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text='קבעו ראיון בעמוד מועמד — לחצו "ראיון" ובחרו תאריך' />
+          <Step num={2} text='הראיון יתווסף אוטומטית לדף "ראיונות עבודה" בסרגל' />
+          <Step num={3} text='לאחר הראיון — לחצו על השורה, רשמו סיכום ובחרו דירוג 1–10' />
+          <Step num={4} text="הדירוג מוצג בכל הראיון, עמוד המועמד, לוח קנבן ותהליכי גיוס" />
         </div>
       </div>
     ),

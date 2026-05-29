@@ -7,6 +7,9 @@ const updateSchema = z.object({
   position: z.number().int().optional(),
   recruitmentStage: z.enum(["cv_received", "interview", "offer", "hired", "rejected"]).optional(),
   startDate: z.string().datetime().nullable().optional(),
+  interviewDate: z.string().datetime().nullable().optional(),
+  interviewSummary: z.string().nullable().optional(),
+  interviewRating: z.number().int().min(1).max(10).nullable().optional(),
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

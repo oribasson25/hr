@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar } from "lucide-react";
+import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +19,8 @@ import { useCandidate, useUpdateCandidate, useDeleteCandidate, useUploadCV, useD
 import { useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/notes";
 import { useCreateReminder } from "@/lib/api/reminders";
 import { useUpdateRecruitmentStage } from "@/lib/api/recruitment";
+import { useUpdateInterview } from "@/lib/api/interviews";
+import { RatingBadge } from "@/app/interviews/page";
 import type { RecruitmentStage } from "@/types/api";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -57,6 +59,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const updateNote = useUpdateNote(id);
   const deleteNote = useDeleteNote(id);
   const createReminder = useCreateReminder();
+  const updateInterview = useUpdateInterview(id);
   const updateRecruitmentStage = useUpdateRecruitmentStage(id);
 
   const handleUpdate = async (data: Parameters<typeof CandidateForm>[0]["onSubmit"] extends (d: infer D) => unknown ? D : never) => {
@@ -118,7 +121,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
     const dateISO = stageDate ? new Date(stageDate).toISOString() : null;
 
     if (type === "interview") {
-      await updateRecruitmentStage.mutateAsync({ id: assignmentId, recruitmentStage: "interview" });
+      await updateRecruitmentStage.mutateAsync({ id: assignmentId, recruitmentStage: "interview", interviewDate: dateISO });
       if (dateISO && candidate) {
         await createReminder.mutateAsync({
           title: `ראיון — ${candidate.fullName} | ${jobTitle}`,
@@ -515,6 +518,24 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                               נדחה
                             </button>
                           </div>
+
+                          {/* Interview rating & summary (shown if assignment went through interview) */}
+                          {(assignment.interviewRating || assignment.interviewSummary) && (
+                            <div className="mt-3 pt-3 border-t border-brand-gray-border space-y-2">
+                              {assignment.interviewRating && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-brand-gray">דירוג ראיון:</span>
+                                  <RatingBadge rating={assignment.interviewRating} />
+                                </div>
+                              )}
+                              {assignment.interviewSummary && (
+                                <div>
+                                  <p className="text-xs text-brand-gray mb-1">סיכום ראיון:</p>
+                                  <p className="text-xs text-brand-black bg-brand-gray-light rounded-lg px-3 py-2 whitespace-pre-wrap">{assignment.interviewSummary}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

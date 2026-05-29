@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileText, MoreVertical, X, GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { RatingBadge } from "@/app/interviews/page";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -98,8 +99,9 @@ export default function CandidateCard({ assignment, jobId, isDragging, onPreview
           </DropdownMenu>
         </div>
       </div>
-      <div className="mt-2 mr-6">
+      <div className="mt-2 mr-6 flex items-center justify-between">
         <span className="text-xs text-brand-gray opacity-70">{date}</span>
+        <RatingBadge rating={assignment.interviewRating ?? null} />
       </div>
     </div>
   );
