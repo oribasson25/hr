@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     const statusFilter = searchParams.get("status");
     const assigned = searchParams.get("assigned");
     const jobId = searchParams.get("jobId");
+    const kanbanStatus = searchParams.get("kanbanStatus");
 
     const where: Record<string, unknown> = {};
 
@@ -37,6 +38,8 @@ export async function GET(req: NextRequest) {
 
     if (jobId) {
       where.assignments = { some: { jobId } };
+    } else if (kanbanStatus) {
+      where.assignments = { some: { status: kanbanStatus } };
     } else if (assigned === "true") {
       where.assignments = { some: {} };
     } else if (assigned === "false") {

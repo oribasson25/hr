@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
-import { Search, FileText, File } from "lucide-react";
+import { Search, FileText, File, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AppShell from "@/components/layout/AppShell";
 import CVPreview from "@/components/cv/CVPreview";
 import { useCandidates } from "@/lib/api/candidates";
@@ -22,7 +20,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function CVsPage() {
   const [search, setSearch] = useState("");
-  const [assigned, setAssigned] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [jobId, setJobId] = useState("all");
   const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
 
@@ -31,7 +29,13 @@ export default function CVsPage() {
   const { data: candidates, isLoading } = useCandidates({
     search,
     hasCv: "true",
-    ...(jobId !== "all" ? { jobId } : assigned !== "all" ? { assigned } : {}),
+    ...(jobId !== "all"
+      ? { jobId }
+      : statusFilter === "assigned" ? { assigned: "true" }
+      : statusFilter === "unassigned" ? { assigned: "false" }
+      : statusFilter === "future" ? { kanbanStatus: "future" }
+      : statusFilter === "leading" ? { kanbanStatus: "leading" }
+      : {}),
   });
 
   return (
@@ -42,8 +46,8 @@ export default function CVsPage() {
           <p className="text-brand-gray mt-1">{candidates?.length ?? 0} קורות חיים במערכת</p>
         </div>
 
-        <div className="flex gap-4 mb-6 flex-wrap">
-          <div className="relative flex-1 min-w-60">
+        <div className="flex gap-3 mb-6 items-center flex-wrap">
+          <div className="relative flex-1 min-w-52">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray" />
             <Input
               value={search}
@@ -52,27 +56,33 @@ export default function CVsPage() {
               className="pr-9 rounded-xl bg-white"
             />
           </div>
-          <Select value={jobId} onValueChange={(v) => { setJobId(v ?? "all"); setAssigned("all"); }}>
-            <SelectTrigger className="w-52 rounded-xl bg-white">
-              <SelectValue placeholder="סינון לפי משרה" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל המשרות</SelectItem>
+          <div className="relative">
+            <select
+              value={jobId}
+              onChange={(e) => { setJobId(e.target.value); setStatusFilter("all"); }}
+              className="appearance-none pl-7 pr-4 py-2 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer min-w-44"
+            >
+              <option value="all">כל המשרות</option>
               {jobs?.map((job) => (
-                <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                <option key={job.id} value={job.id}>{job.title}</option>
               ))}
-            </SelectContent>
-          </Select>
-          <Select value={assigned} onValueChange={(v) => { setAssigned(v ?? "all"); setJobId("all"); }}>
-            <SelectTrigger className="w-48 rounded-xl bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל המועמדים</SelectItem>
-              <SelectItem value="true">משויכים למשרה</SelectItem>
-              <SelectItem value="false">לא משויכים</SelectItem>
-            </SelectContent>
-          </Select>
+            </select>
+            <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-gray pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setJobId("all"); }}
+              className="appearance-none pl-7 pr-4 py-2 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer min-w-44"
+            >
+              <option value="all">כל המועמדים</option>
+              <option value="assigned">משויכים למשרה</option>
+              <option value="unassigned">לא משויכים</option>
+              <option value="leading">מועמדים מובילים</option>
+              <option value="future">סומנו לעתיד</option>
+            </select>
+            <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-gray pointer-events-none" />
+          </div>
         </div>
 
         {isLoading ? (
