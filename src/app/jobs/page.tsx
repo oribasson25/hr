@@ -106,7 +106,7 @@ export default function JobsPage() {
 }
 
 function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
-  const counts = job._count || { leading: 0, candidate: 0, not_relevant: 0, future: 0 };
+  const counts = job._count || { leading: 0, candidate: 0, not_relevant: 0, future: 0, hired: 0 };
   const total = counts.leading + counts.candidate + counts.not_relevant + counts.future;
 
   return (
@@ -148,6 +148,12 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-gray-400 inline-block" />
             {counts.not_relevant} לא רלוונטי
+          </span>
+        )}
+        {(counts.hired ?? 0) > 0 && (
+          <span className="flex items-center gap-1 text-green-700 font-medium">
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            {counts.hired} גויסו
           </span>
         )}
         {total === 0 && <span>אין מועמדים עדיין</span>}

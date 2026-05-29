@@ -20,13 +20,14 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       include: {
         _count: { select: { assignments: true } },
-        assignments: { select: { status: true } },
+        assignments: { select: { status: true, recruitmentStage: true } },
       },
     });
 
     const jobsWithCounts = jobs.map((job) => {
-      const counts = { leading: 0, candidate: 0, not_relevant: 0, future: 0 };
+      const counts = { leading: 0, candidate: 0, not_relevant: 0, future: 0, hired: 0 };
       job.assignments.forEach((a) => {
+        if (a.recruitmentStage === "hired") { counts.hired++; return; }
         if (a.status in counts) counts[a.status as keyof typeof counts]++;
       });
       return { ...job, assignments: undefined, _count: counts };

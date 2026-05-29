@@ -93,7 +93,8 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   }
 
   const isFilled = job.status === "filled";
-  const hiredCount = job.assignments?.filter((a) => a.recruitmentStage === "hired").length ?? 0;
+  const hiredAssignments = job.assignments?.filter((a) => a.recruitmentStage === "hired") ?? [];
+  const hiredCount = hiredAssignments.length;
 
   return (
     <AppShell>
@@ -130,9 +131,14 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
               {isFilled ? "נסגרה" : "פתוחה"}
             </Badge>
             {hiredCount > 0 && (
-              <Badge className="rounded-full bg-green-100 text-green-700 border border-green-200">
-                גויסו: {hiredCount}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className="rounded-full bg-green-100 text-green-700 border border-green-200">
+                  גויסו: {hiredCount}
+                </Badge>
+                <span className="text-sm text-green-700 font-medium">
+                  {hiredAssignments.map((a) => a.candidate?.fullName).join(", ")}
+                </span>
+              </div>
             )}
           </div>
           <DropdownMenu>
