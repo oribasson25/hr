@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Users, FileText, MessageSquare, Gift, CheckCircle, XCircle, TrendingUp, Clock, ChevronDown } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import { useRecruitmentData } from "@/lib/api/recruitment";
-import { RatingBadge } from "@/app/interviews/page";
 
 const STAGE_META = {
   cv_received: { label: 'קו"ח התקבלו', icon: FileText, color: "bg-blue-50 text-blue-600 border-blue-100" },
@@ -27,7 +26,6 @@ interface Assignment {
   status: string;
   recruitmentStage: StageKey;
   startDate: string | null;
-  interviewRating: number | null;
   createdAt: string;
   updatedAt: string;
   candidate?: { id: string; fullName: string };
@@ -155,9 +153,6 @@ export default function RecruitmentPage() {
                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${stage.color} flex-shrink-0`}>
                       <Icon className="w-3.5 h-3.5" />
                       {stage.label}
-                    </div>
-                    <div className="flex-shrink-0 w-12 flex justify-center">
-                      <RatingBadge rating={a.interviewRating} />
                     </div>
                     <span className="text-xs text-brand-gray flex-shrink-0">
                       {new Date(a.updatedAt).toLocaleDateString("he-IL")}

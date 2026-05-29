@@ -45,9 +45,6 @@ export interface JobAssignment {
   position: number;
   recruitmentStage: RecruitmentStage;
   startDate: string | null;
-  interviewDate: string | null;
-  interviewSummary: string | null;
-  interviewRating: number | null;
   createdAt: string;
   updatedAt: string;
   job?: Job;

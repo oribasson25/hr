@@ -11,24 +11,14 @@ export function useRecruitmentData() {
 export function useUpdateRecruitmentStage(candidateId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, recruitmentStage, startDate, interviewDate }: {
-      id: string;
-      recruitmentStage: RecruitmentStage;
-      startDate?: string | null;
-      interviewDate?: string | null;
-    }) =>
+    mutationFn: ({ id, recruitmentStage, startDate }: { id: string; recruitmentStage: RecruitmentStage; startDate?: string | null }) =>
       fetch(`/api/assignments/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recruitmentStage,
-          ...(startDate !== undefined && { startDate }),
-          ...(interviewDate !== undefined && { interviewDate }),
-        }),
+        body: JSON.stringify({ recruitmentStage, ...(startDate !== undefined && { startDate }) }),
       }).then((r) => r.json()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["recruitment"] });
-      qc.invalidateQueries({ queryKey: ["interviews"] });
       if (candidateId) qc.invalidateQueries({ queryKey: ["candidate", candidateId] });
     },
   });
