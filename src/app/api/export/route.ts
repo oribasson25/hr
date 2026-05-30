@@ -12,6 +12,14 @@ const STATUS_LABELS: Record<string, string> = {
   closed: "סגורה",
 };
 
+const STAGE_LABELS: Record<string, string> = {
+  cv_received: 'קו"ח התקבלו',
+  interview: "ראיון",
+  offer: "הצעה",
+  hired: "גויס",
+  rejected: "נדחה",
+};
+
 function rtlSheet(ws: XLSX.WorkSheet) {
   if (!ws["!views"]) ws["!views"] = [{}];
   ws["!views"][0] = { ...ws["!views"][0], rightToLeft: true };
@@ -66,17 +74,23 @@ export async function GET() {
     wsJobs["!cols"] = [30, 40, 40, 12, 16, 16].map((w) => ({ wch: w }));
     XLSX.utils.book_append_sheet(wb, wsJobs, "משרות");
 
-    // Sheet 3: שיוכים
+    // Sheet 3: תהליכי גיוס
     const assignmentsData = assignments.map((a) => ({
       "שם מועמד": a.candidate.fullName,
-      "טלפון מועמד": a.candidate.phone,
+      "טלפון": a.candidate.phone,
+      "אימייל": a.candidate.email,
       "משרה": a.job.title,
-      "סטטוס שיוך": STATUS_LABELS[a.status] ?? a.status,
+      "סטטוס משרה": STATUS_LABELS[a.job.status] ?? a.job.status,
+      "סטטוס קנבן": STATUS_LABELS[a.status] ?? a.status,
+      "שלב גיוס": STAGE_LABELS[a.recruitmentStage] ?? a.recruitmentStage,
+      "תאריך תחילת עבודה": a.startDate ? new Date(a.startDate).toLocaleDateString("he-IL") : "",
       "תאריך שיוך": new Date(a.createdAt).toLocaleDateString("he-IL"),
+      "עדכון אחרון": new Date(a.updatedAt).toLocaleDateString("he-IL"),
     }));
-    const wsAssignments = rtlSheet(XLSX.utils.json_to_sheet(assignmentsData.length ? assignmentsData : [{ "שם מועמד": "", "טלפון מועמד": "", "משרה": "", "סטטוס שיוך": "", "תאריך שיוך": "" }]));
-    wsAssignments["!cols"] = [28, 18, 30, 16, 16].map((w) => ({ wch: w }));
-    XLSX.utils.book_append_sheet(wb, wsAssignments, "שיוכים");
+    const emptyAssignment = { "שם מועמד": "", "טלפון": "", "אימייל": "", "משרה": "", "סטטוס משרה": "", "סטטוס קנבן": "", "שלב גיוס": "", "תאריך תחילת עבודה": "", "תאריך שיוך": "", "עדכון אחרון": "" };
+    const wsAssignments = rtlSheet(XLSX.utils.json_to_sheet(assignmentsData.length ? assignmentsData : [emptyAssignment]));
+    wsAssignments["!cols"] = [28, 18, 28, 28, 14, 14, 18, 18, 16, 16].map((w) => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, wsAssignments, "תהליכי גיוס");
 
     // Sheet 4: הערות
     const notesData = notes.map((n) => ({
