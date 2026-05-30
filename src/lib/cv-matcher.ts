@@ -178,7 +178,7 @@ export function resolveSynonym(token: string, synonymMap: SynonymMap): string {
 const STOP_WORDS = new Set([
   "של", "עם", "על", "את", "לא", "כן", "גם", "או", "אם", "כי",
   "כל", "בין", "עד", "יש", "אין", "רק", "מה", "זה", "זו",
-  "שנות", "ניסיון",
+  "שנות", "ניסיון", "יכולת", "גבוהה",
   "the", "and", "or", "in", "of", "to", "for", "with", "from",
   "at", "be", "an", "a", "is", "it", "on", "by", "as", "we",
 ]);
