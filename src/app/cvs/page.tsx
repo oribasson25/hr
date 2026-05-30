@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, type Variants } from "framer-motion";
 import { Search, FileText, File, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import AppShell from "@/components/layout/AppShell";
@@ -11,6 +12,16 @@ import CVPreview from "@/components/cv/CVPreview";
 import { useCandidates } from "@/lib/api/candidates";
 import { useJobs } from "@/lib/api/jobs";
 import type { Candidate } from "@/types/api";
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.05 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.96, y: 12 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+};
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -105,15 +116,21 @@ export default function CVsPage() {
             <p className="text-brand-gray">קורות חיים יופיעו כאן לאחר העלאתם למועמדים</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          >
             {candidates?.map((candidate: Candidate) => (
-              <CVCard
-                key={candidate.id}
-                candidate={candidate}
-                onClick={() => setPreviewCandidate(candidate)}
-              />
+              <motion.div key={candidate.id} variants={cardVariants}>
+                <CVCard
+                  candidate={candidate}
+                  onClick={() => setPreviewCandidate(candidate)}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -133,9 +150,10 @@ function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => v
   const isPdf = candidate.cvFileType === "pdf";
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className="group bg-white rounded-2xl p-4 border border-brand-gray-border text-center hover:shadow-md hover:bg-brand-yellow-soft transition-all duration-200 relative"
+      whileTap={{ scale: 0.96, transition: { duration: 0.1 } }}
+      className="group bg-white rounded-2xl p-4 border border-brand-gray-border text-center hover:shadow-md hover:bg-brand-yellow-soft transition-all duration-200 relative w-full"
     >
       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 ${isPdf ? "bg-red-50" : "bg-blue-50"}`}>
         {isPdf ? (
@@ -179,6 +197,6 @@ function CVCard({ candidate, onClick }: { candidate: Candidate; onClick: () => v
       <p className="text-xs text-brand-gray mt-2 opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-2 left-0 right-0">
         לחץ לצפייה
       </p>
-    </button>
+    </motion.button>
   );
 }

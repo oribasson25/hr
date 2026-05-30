@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Users, FileText, MessageSquare, Gift, CheckCircle, XCircle, TrendingUp, Clock, ChevronDown } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
@@ -141,7 +142,12 @@ export default function RecruitmentPage() {
 
         {/* Dashboard Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl border border-brand-gray-border p-5">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="bg-white rounded-2xl border border-brand-gray-border p-5"
+          >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-brand-yellow-soft flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-brand-black" />
@@ -149,14 +155,20 @@ export default function RecruitmentPage() {
               <span className="text-sm text-brand-gray font-medium">תהליכים פתוחים</span>
             </div>
             <p className="text-3xl font-bold text-brand-black">{isLoading ? "—" : activeCount}</p>
-          </div>
+          </motion.div>
 
-          {(["cv_received", "interview", "offer"] as StageKey[]).map((key) => {
+          {(["cv_received", "interview", "offer"] as StageKey[]).map((key, i) => {
             const meta = STAGE_META[key];
             const Icon = meta.icon;
             const count = stages?.[key]?.length ?? 0;
             return (
-              <div key={key} className="bg-white rounded-2xl border border-brand-gray-border p-5">
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: (i + 1) * 0.07, ease: "easeOut" }}
+                className="bg-white rounded-2xl border border-brand-gray-border p-5"
+              >
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${meta.color}`}>
                     <Icon className="w-5 h-5" />
@@ -164,7 +176,7 @@ export default function RecruitmentPage() {
                   <span className="text-sm text-brand-gray font-medium">{meta.label}</span>
                 </div>
                 <p className="text-3xl font-bold text-brand-black">{isLoading ? "—" : count}</p>
-              </div>
+              </motion.div>
             );
           })}
         </div>
@@ -202,8 +214,14 @@ export default function RecruitmentPage() {
             <div className="p-8 text-center text-brand-gray">אין תהליכים למשרה זו</div>
           ) : (
             <div className="divide-y divide-brand-gray-border">
-              {filtered.map((a) => (
-                <div key={a.id} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
+              {filtered.map((a, i) => (
+                <motion.div
+                  key={a.id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: i * 0.03, ease: "easeOut" }}
+                  className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors"
+                >
                   <button
                     onClick={() => router.push(`/candidates/${a.candidate?.id}`)}
                     className="font-semibold text-brand-black hover:underline text-sm w-36 text-right flex-shrink-0"
@@ -227,7 +245,7 @@ export default function RecruitmentPage() {
                   <span className="text-xs text-brand-gray flex-shrink-0 w-16 text-left">
                     {new Date(a.updatedAt).toLocaleDateString("he-IL")}
                   </span>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}

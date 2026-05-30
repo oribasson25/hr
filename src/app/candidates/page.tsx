@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Search, Users, FileText, Check, X } from "lucide-react";
@@ -109,9 +110,12 @@ export default function CandidatesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-gray-border">
-                {candidates?.map((candidate: Candidate) => (
-                  <tr
+                {candidates?.map((candidate: Candidate, i: number) => (
+                  <motion.tr
                     key={candidate.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, delay: i * 0.04, ease: "easeOut" }}
                     onClick={() => router.push(`/candidates/${candidate.id}`)}
                     className="hover:bg-brand-gray-light cursor-pointer transition-colors"
                   >
@@ -145,7 +149,7 @@ export default function CandidatesPage() {
                     <td className="px-6 py-4 text-brand-gray text-sm">
                       {new Date(candidate.createdAt).toLocaleDateString("he-IL")}
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, type Variants } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Briefcase } from "lucide-react";
@@ -10,6 +11,16 @@ import AppShell from "@/components/layout/AppShell";
 import JobForm from "@/components/jobs/JobForm";
 import { useJobs, useCreateJob } from "@/lib/api/jobs";
 import type { Job } from "@/types/api";
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06 } },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.28, ease: "easeOut" } },
+};
 
 const statusLabels: Record<string, string> = {
   all: "הכול",
@@ -87,11 +98,18 @@ export default function JobsPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {jobs?.map((job: Job) => (
-              <JobCard key={job.id} job={job} onClick={() => router.push(`/jobs/${job.id}`)} />
+              <motion.div key={job.id} variants={itemVariants}>
+                <JobCard job={job} onClick={() => router.push(`/jobs/${job.id}`)} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -110,9 +128,11 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
   const total = counts.leading + counts.candidate + counts.not_relevant + counts.future;
 
   return (
-    <div
+    <motion.div
       onClick={onClick}
-      className="bg-white rounded-2xl p-6 border border-brand-gray-border shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+      whileHover={{ y: -3, transition: { duration: 0.15, ease: "easeOut" } }}
+      whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
+      className="bg-white rounded-2xl p-6 border border-brand-gray-border shadow-sm hover:shadow-md cursor-pointer transition-shadow h-full"
     >
       <div className="flex items-start justify-between mb-3">
         <h2 className="text-lg font-bold text-brand-black leading-tight">{job.title}</h2>
@@ -158,6 +178,6 @@ function JobCard({ job, onClick }: { job: Job; onClick: () => void }) {
         )}
         {total === 0 && <span>אין מועמדים עדיין</span>}
       </div>
-    </div>
+    </motion.div>
   );
 }
