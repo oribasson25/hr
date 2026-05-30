@@ -124,7 +124,6 @@ export const SYNONYM_MAP: SynonymMap = {
   מנהל: "ניהול",
   מנהלת: "ניהול",
   ניהול: "ניהול",
-  ניסיון: "ניסיון",
   פיתוח: "פיתוח",
   מפתח: "פיתוח",
   מפתחת: "פיתוח",
@@ -179,6 +178,7 @@ export function resolveSynonym(token: string, synonymMap: SynonymMap): string {
 const STOP_WORDS = new Set([
   "של", "עם", "על", "את", "לא", "כן", "גם", "או", "אם", "כי",
   "כל", "בין", "עד", "יש", "אין", "רק", "מה", "זה", "זו",
+  "שנות", "ניסיון",
   "the", "and", "or", "in", "of", "to", "for", "with", "from",
   "at", "be", "an", "a", "is", "it", "on", "by", "as", "we",
 ]);
