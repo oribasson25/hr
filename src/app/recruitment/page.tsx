@@ -95,6 +95,7 @@ export default function RecruitmentPage() {
   const { data: hrStaff } = useHrStaff();
   const [jobFilter, setJobFilter] = useState("");
   const [hrStaffFilter, setHrStaffFilter] = useState("");
+  const [showAll, setShowAll] = useState(false);
 
   const stages = data?.stages as Record<StageKey, Assignment[]> | undefined;
   const recentHires = data?.recentHires as Assignment[] | undefined;
@@ -167,7 +168,7 @@ export default function RecruitmentPage() {
             <div className="mr-auto flex items-center gap-3 flex-wrap">
               {jobOptions.length > 0 && (
                 <div className="relative">
-                  <select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)} className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer">
+                  <select value={jobFilter} onChange={(e) => { setJobFilter(e.target.value); setShowAll(false); }} className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer">
                     <option value="">כל המשרות</option>
                     {jobOptions.map((j) => (
                       <option key={j.id} value={j.id}>{j.title}</option>
@@ -178,7 +179,7 @@ export default function RecruitmentPage() {
               )}
               {hrStaff && hrStaff.length > 0 && (
                 <div className="relative">
-                  <select value={hrStaffFilter} onChange={(e) => setHrStaffFilter(e.target.value)} className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer">
+                  <select value={hrStaffFilter} onChange={(e) => { setHrStaffFilter(e.target.value); setShowAll(false); }} className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer">
                     <option value="">כל אנשי HR</option>
                     {hrStaff.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
@@ -198,29 +199,41 @@ export default function RecruitmentPage() {
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center text-brand-gray">אין תהליכים לסינון זה</div>
           ) : (
-            <div className="divide-y divide-brand-gray-border">
-              {filtered.map((a, i) => (
-                <motion.div key={a.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: i * 0.03, ease: "easeOut" }} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
-                  <button onClick={() => router.push(`/candidates/${a.candidate?.id}`)} className="font-semibold text-brand-black hover:underline text-sm w-36 text-right flex-shrink-0">
-                    {a.candidate?.fullName}
-                  </button>
-                  {KANBAN_META[a.status] && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${KANBAN_META[a.status].color}`}>
-                      {KANBAN_META[a.status].label}
+            <>
+              <div className="divide-y divide-brand-gray-border">
+                {(showAll ? filtered : filtered.slice(0, 5)).map((a, i) => (
+                  <motion.div key={a.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: i * 0.03, ease: "easeOut" }} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
+                    <button onClick={() => router.push(`/candidates/${a.candidate?.id}`)} className="font-semibold text-brand-black hover:underline text-sm w-36 text-right flex-shrink-0">
+                      {a.candidate?.fullName}
+                    </button>
+                    {KANBAN_META[a.status] && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${KANBAN_META[a.status].color}`}>
+                        {KANBAN_META[a.status].label}
+                      </span>
+                    )}
+                    <button onClick={() => router.push(`/jobs/${a.job?.id}`)} className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate">
+                      {a.job?.title}
+                    </button>
+                    <div className="w-52 flex-shrink-0">
+                      <PipelineBar stage={a.recruitmentStage} />
+                    </div>
+                    <span className="text-xs text-brand-gray flex-shrink-0 w-16 text-left">
+                      {new Date(a.updatedAt).toLocaleDateString("he-IL")}
                     </span>
-                  )}
-                  <button onClick={() => router.push(`/jobs/${a.job?.id}`)} className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate">
-                    {a.job?.title}
+                  </motion.div>
+                ))}
+              </div>
+              {filtered.length > 5 && (
+                <div className="px-6 py-3 border-t border-brand-gray-border text-center">
+                  <button
+                    onClick={() => setShowAll((v) => !v)}
+                    className="text-sm text-brand-gray hover:text-brand-black font-medium transition-colors"
+                  >
+                    {showAll ? "הצג פחות ↑" : `הצג הכל (${filtered.length}) ↓`}
                   </button>
-                  <div className="w-52 flex-shrink-0">
-                    <PipelineBar stage={a.recruitmentStage} />
-                  </div>
-                  <span className="text-xs text-brand-gray flex-shrink-0 w-16 text-left">
-                    {new Date(a.updatedAt).toLocaleDateString("he-IL")}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
