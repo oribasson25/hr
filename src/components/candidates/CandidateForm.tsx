@@ -8,7 +8,6 @@ import { useDropzone } from "react-dropzone";
 import { Upload, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -20,33 +19,57 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useJobs } from "@/lib/api/jobs";
-import type { Candidate } from "@/types/api";
+import { useCandidates } from "@/lib/api/candidates";
+import { useHrStaff } from "@/lib/api/hr-staff";
+import type { Candidate, CandidateSource } from "@/types/api";
 
 const schema = z.object({
   fullName: z.string().min(1, "נדרש שם מלא"),
   phone: z.string().min(9, "מספר טלפון לא תקין"),
-  email: z.string().email("כתובת אימייל לא תקינה"),
+  email: z.string().email("כתובת אימייל לא תקינה").optional().or(z.literal("")),
   address: z.string().optional(),
+  salaryExpectation: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
+const SOURCE_LABELS: Record<CandidateSource, string> = {
+  referral: "חבר מביא חבר",
+  linkedin: "לינקדאין",
+  facebook: "פייסבוק",
+  job_board: "אתר משרות",
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (formData: FormData & { appliedForJobId?: string; appliedForCustom?: string; cv?: File }) => Promise<void>;
+  onSubmit: (formData: FormData & {
+    appliedForJobId?: string;
+    appliedForCustom?: string;
+    cv?: File;
+    source?: CandidateSource;
+    referredById?: string;
+    salaryExpectation?: string;
+    hrStaffId?: string;
+  }) => Promise<void>;
   defaultValues?: Partial<Candidate>;
   title?: string;
   loading?: boolean;
   isEdit?: boolean;
+  preselectedJobId?: string;
 }
 
-export default function CandidateForm({ open, onClose, onSubmit, defaultValues, title = "מועמד חדש", loading, isEdit }: Props) {
+export default function CandidateForm({ open, onClose, onSubmit, defaultValues, title = "מועמד חדש", loading, isEdit, preselectedJobId }: Props) {
   const [cvFile, setCvFile] = useState<File | null>(null);
-  const [appliedForJobId, setAppliedForJobId] = useState<string>("");
+  const [appliedForJobId, setAppliedForJobId] = useState<string>(preselectedJobId || "");
   const [appliedForCustom, setAppliedForCustom] = useState<string>("");
+  const [source, setSource] = useState<CandidateSource | "">(defaultValues?.source || "");
+  const [referredById, setReferredById] = useState<string>(defaultValues?.referredById || "");
+  const [hrStaffId, setHrStaffId] = useState<string>(defaultValues?.hrStaffId || "");
 
   const { data: openJobs } = useJobs("open");
+  const { data: allCandidates } = useCandidates();
+  const { data: hrStaff } = useHrStaff();
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -55,6 +78,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
       phone: defaultValues?.phone || "",
       email: defaultValues?.email || "",
       address: defaultValues?.address || "",
+      salaryExpectation: defaultValues?.salaryExpectation || "",
     },
   });
 
@@ -72,8 +96,11 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
   const handleClose = () => {
     reset();
     setCvFile(null);
-    setAppliedForJobId("");
+    setAppliedForJobId(preselectedJobId || "");
     setAppliedForCustom("");
+    setSource("");
+    setReferredById("");
+    setHrStaffId("");
     onClose();
   };
 
@@ -84,10 +111,13 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
         cv: cvFile || undefined,
         appliedForJobId: appliedForJobId && appliedForJobId !== "custom" ? appliedForJobId : undefined,
         appliedForCustom: appliedForJobId === "custom" ? appliedForCustom : undefined,
+        source: source || undefined,
+        referredById: source === "referral" && referredById ? referredById : undefined,
+        hrStaffId: hrStaffId || undefined,
       });
       handleClose();
     } catch {
-      // onSubmit threw — keep the form open so the user can correct the data
+      // keep form open on error
     }
   };
 
@@ -103,6 +133,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
             <Input id="fullName" {...register("fullName")} className="rounded-xl" />
             {errors.fullName && <p className="text-sm text-red-500">{errors.fullName.message}</p>}
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="phone">טלפון *</Label>
@@ -110,15 +141,68 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
               {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="email">אימייל *</Label>
+              <Label htmlFor="email">אימייל</Label>
               <Input id="email" {...register("email")} type="email" className="rounded-xl" />
               {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
           </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="address">כתובת</Label>
             <Input id="address" {...register("address")} className="rounded-xl" />
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="salaryExpectation">ציפיות שכר</Label>
+            <Input id="salaryExpectation" {...register("salaryExpectation")} placeholder="לדוגמה: 20,000-25,000 ₪" className="rounded-xl" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>מקור הגעה</Label>
+            <Select value={source} onValueChange={(v) => setSource((v ?? "") as CandidateSource | "")}>
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder="בחרי מקור..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="referral">חבר מביא חבר</SelectItem>
+                <SelectItem value="linkedin">לינקדאין</SelectItem>
+                <SelectItem value="facebook">פייסבוק</SelectItem>
+                <SelectItem value="job_board">אתר משרות</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {source === "referral" && (
+            <div className="space-y-1.5">
+              <Label>מי הפנה?</Label>
+              <Select value={referredById} onValueChange={(v) => setReferredById(v ?? "")}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="בחרי מועמד/עובד שהפנה..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allCandidates?.filter((c) => c.id !== defaultValues?.id).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.fullName} — {c.phone}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {hrStaff && hrStaff.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>איש HR אחראי</Label>
+              <Select value={hrStaffId} onValueChange={(v) => setHrStaffId(v ?? "")}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="בחרי איש HR..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {hrStaff.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}{s.role ? ` — ${s.role}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {!isEdit && (
             <div className="space-y-1.5">

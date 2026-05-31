@@ -1,12 +1,24 @@
 export type JobStatus = "open" | "filled";
 export type AssignmentStatus = "leading" | "candidate" | "not_relevant" | "future";
 export type RecruitmentStage = "cv_received" | "interview" | "offer" | "hired" | "rejected";
+export type CandidateSource = "referral" | "linkedin" | "facebook" | "job_board";
+
+export interface HrStaff {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Job {
   id: string;
   title: string;
   description: string;
   requirements: string;
+  salaryBudget: string | null;
   status: JobStatus;
   filledAt: string | null;
   createdAt: string;
@@ -25,12 +37,18 @@ export interface Candidate {
   id: string;
   fullName: string;
   phone: string;
-  email: string;
+  email: string | null;
   address: string | null;
   cvFileName: string | null;
   cvFilePath: string | null;
   cvFileType: string | null;
   appliedForCustom: string | null;
+  source: CandidateSource | null;
+  salaryExpectation: string | null;
+  hrStaffId: string | null;
+  hrStaff?: HrStaff | null;
+  referredById: string | null;
+  referredBy?: Pick<Candidate, "id" | "fullName"> | null;
   createdAt: string;
   updatedAt: string;
   assignments?: JobAssignment[];
@@ -44,6 +62,7 @@ export interface JobAssignment {
   status: AssignmentStatus;
   position: number;
   recruitmentStage: RecruitmentStage;
+  rejectionReason: string | null;
   startDate: string | null;
   createdAt: string;
   updatedAt: string;

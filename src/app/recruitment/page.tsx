@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Users, FileText, MessageSquare, Gift, CheckCircle, XCircle, TrendingUp, Clock, ChevronDown } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 import { useRecruitmentData } from "@/lib/api/recruitment";
+import { useHrStaff } from "@/lib/api/hr-staff";
 
 const PIPELINE_STEPS: { key: StageKey; label: string }[] = [
   { key: "cv_received", label: 'קו"ח' },
@@ -33,38 +34,19 @@ function PipelineBar({ stage }: { stage: string }) {
         const active = !isRejected && i === currentIdx;
         const colored = done || active;
         return (
-          <div
-            key={step.key}
-            className={`flex items-start ${i < PIPELINE_STEPS.length - 1 ? "flex-1" : "flex-none"}`}
-          >
+          <div key={step.key} className={`flex items-start ${i < PIPELINE_STEPS.length - 1 ? "flex-1" : "flex-none"}`}>
             <div className="flex flex-col items-center flex-shrink-0">
-              <div
-                className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-                  done
-                    ? "bg-brand-yellow border-brand-yellow"
-                    : active
-                    ? "bg-brand-yellow border-brand-yellow ring-2 ring-brand-yellow/40 scale-110"
-                    : isRejected
-                    ? "bg-red-200 border-red-300"
-                    : "bg-white border-brand-gray-border"
-                }`}
-              >
+              <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                done ? "bg-brand-yellow border-brand-yellow" : active ? "bg-brand-yellow border-brand-yellow ring-2 ring-brand-yellow/40 scale-110" : isRejected ? "bg-red-200 border-red-300" : "bg-white border-brand-gray-border"
+              }`}>
                 {done && <div className="w-1 h-1 rounded-full bg-brand-black" />}
               </div>
-              <span
-                className={`text-[10px] mt-0.5 whitespace-nowrap font-medium leading-tight ${
-                  colored ? "text-brand-black" : isRejected ? "text-red-400" : "text-brand-gray"
-                }`}
-              >
+              <span className={`text-[10px] mt-0.5 whitespace-nowrap font-medium leading-tight ${colored ? "text-brand-black" : isRejected ? "text-red-400" : "text-brand-gray"}`}>
                 {step.label}
               </span>
             </div>
             {i < PIPELINE_STEPS.length - 1 && (
-              <div
-                className={`flex-1 h-0.5 mt-[6px] transition-colors duration-300 ${
-                  done ? "bg-brand-yellow" : "bg-brand-gray-border"
-                }`}
-              />
+              <div className={`flex-1 h-0.5 mt-[6px] transition-colors duration-300 ${done ? "bg-brand-yellow" : "bg-brand-gray-border"}`} />
             )}
           </div>
         );
@@ -103,14 +85,16 @@ interface Assignment {
   startDate: string | null;
   createdAt: string;
   updatedAt: string;
-  candidate?: { id: string; fullName: string };
+  candidate?: { id: string; fullName: string; hrStaffId?: string | null };
   job?: { id: string; title: string; status: string };
 }
 
 export default function RecruitmentPage() {
   const router = useRouter();
   const { data, isLoading } = useRecruitmentData();
+  const { data: hrStaff } = useHrStaff();
   const [jobFilter, setJobFilter] = useState("");
+  const [hrStaffFilter, setHrStaffFilter] = useState("");
 
   const stages = data?.stages as Record<StageKey, Assignment[]> | undefined;
   const recentHires = data?.recentHires as Assignment[] | undefined;
@@ -126,7 +110,12 @@ export default function RecruitmentPage() {
       .filter((j) => j.id && !seen.has(j.id) && seen.add(j.id));
   }, [allActive]);
 
-  const filtered = jobFilter ? allActive.filter((a) => a.job?.id === jobFilter) : allActive;
+  const filtered = useMemo(() => {
+    let result = allActive;
+    if (jobFilter) result = result.filter((a) => a.job?.id === jobFilter);
+    if (hrStaffFilter) result = result.filter((a) => a.candidate?.hrStaffId === hrStaffFilter);
+    return result;
+  }, [allActive, jobFilter, hrStaffFilter]);
 
   const activeCount = stages
     ? (stages.cv_received?.length ?? 0) + (stages.interview?.length ?? 0) + (stages.offer?.length ?? 0)
@@ -142,12 +131,7 @@ export default function RecruitmentPage() {
 
         {/* Dashboard Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="bg-white rounded-2xl border border-brand-gray-border p-5"
-          >
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: "easeOut" }} className="bg-white rounded-2xl border border-brand-gray-border p-5">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-brand-yellow-soft flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-brand-black" />
@@ -162,13 +146,7 @@ export default function RecruitmentPage() {
             const Icon = meta.icon;
             const count = stages?.[key]?.length ?? 0;
             return (
-              <motion.div
-                key={key}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: (i + 1) * 0.07, ease: "easeOut" }}
-                className="bg-white rounded-2xl border border-brand-gray-border p-5"
-              >
+              <motion.div key={key} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: (i + 1) * 0.07, ease: "easeOut" }} className="bg-white rounded-2xl border border-brand-gray-border p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${meta.color}`}>
                     <Icon className="w-5 h-5" />
@@ -186,17 +164,24 @@ export default function RecruitmentPage() {
           <div className="px-6 py-4 border-b border-brand-gray-border flex items-center gap-3 flex-wrap">
             <Clock className="w-4 h-4 text-brand-gray flex-shrink-0" />
             <h2 className="font-semibold text-brand-black">כל התהליכים הפתוחים</h2>
-            <div className="mr-auto flex items-center gap-3">
+            <div className="mr-auto flex items-center gap-3 flex-wrap">
               {jobOptions.length > 0 && (
                 <div className="relative">
-                  <select
-                    value={jobFilter}
-                    onChange={(e) => setJobFilter(e.target.value)}
-                    className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer"
-                  >
+                  <select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)} className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer">
                     <option value="">כל המשרות</option>
                     {jobOptions.map((j) => (
                       <option key={j.id} value={j.id}>{j.title}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-gray pointer-events-none" />
+                </div>
+              )}
+              {hrStaff && hrStaff.length > 0 && (
+                <div className="relative">
+                  <select value={hrStaffFilter} onChange={(e) => setHrStaffFilter(e.target.value)} className="appearance-none pl-7 pr-3 py-1.5 text-sm rounded-xl border border-brand-gray-border bg-white text-brand-black focus:outline-none focus:ring-2 focus:ring-brand-yellow cursor-pointer">
+                    <option value="">כל אנשי HR</option>
+                    {hrStaff.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-gray pointer-events-none" />
@@ -211,21 +196,12 @@ export default function RecruitmentPage() {
           ) : allActive.length === 0 ? (
             <div className="p-8 text-center text-brand-gray">אין תהליכים פתוחים כרגע</div>
           ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-brand-gray">אין תהליכים למשרה זו</div>
+            <div className="p-8 text-center text-brand-gray">אין תהליכים לסינון זה</div>
           ) : (
             <div className="divide-y divide-brand-gray-border">
               {filtered.map((a, i) => (
-                <motion.div
-                  key={a.id}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: i * 0.03, ease: "easeOut" }}
-                  className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors"
-                >
-                  <button
-                    onClick={() => router.push(`/candidates/${a.candidate?.id}`)}
-                    className="font-semibold text-brand-black hover:underline text-sm w-36 text-right flex-shrink-0"
-                  >
+                <motion.div key={a.id} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: i * 0.03, ease: "easeOut" }} className="px-6 py-4 flex items-center gap-4 hover:bg-brand-gray-light/40 transition-colors">
+                  <button onClick={() => router.push(`/candidates/${a.candidate?.id}`)} className="font-semibold text-brand-black hover:underline text-sm w-36 text-right flex-shrink-0">
                     {a.candidate?.fullName}
                   </button>
                   {KANBAN_META[a.status] && (
@@ -233,10 +209,7 @@ export default function RecruitmentPage() {
                       {KANBAN_META[a.status].label}
                     </span>
                   )}
-                  <button
-                    onClick={() => router.push(`/jobs/${a.job?.id}`)}
-                    className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate"
-                  >
+                  <button onClick={() => router.push(`/jobs/${a.job?.id}`)} className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate">
                     {a.job?.title}
                   </button>
                   <div className="w-52 flex-shrink-0">
@@ -270,16 +243,10 @@ export default function RecruitmentPage() {
                   <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <Users className="w-4 h-4 text-green-600" />
                   </div>
-                  <button
-                    onClick={() => router.push(`/candidates/${a.candidate?.id}`)}
-                    className="font-semibold text-brand-black hover:underline text-sm w-40 text-right flex-shrink-0"
-                  >
+                  <button onClick={() => router.push(`/candidates/${a.candidate?.id}`)} className="font-semibold text-brand-black hover:underline text-sm w-40 text-right flex-shrink-0">
                     {a.candidate?.fullName}
                   </button>
-                  <button
-                    onClick={() => router.push(`/jobs/${a.job?.id}`)}
-                    className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate"
-                  >
+                  <button onClick={() => router.push(`/jobs/${a.job?.id}`)} className="text-brand-gray hover:text-brand-black hover:underline text-sm flex-1 text-right truncate">
                     {a.job?.title}
                   </button>
                   <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
@@ -287,9 +254,7 @@ export default function RecruitmentPage() {
                       גויס {new Date(a.updatedAt).toLocaleDateString("he-IL")}
                     </span>
                     {a.startDate && (
-                      <span className="text-xs text-brand-gray">
-                        מתחיל {new Date(a.startDate).toLocaleDateString("he-IL")}
-                      </span>
+                      <span className="text-xs text-brand-gray">מתחיל {new Date(a.startDate).toLocaleDateString("he-IL")}</span>
                     )}
                   </div>
                 </div>

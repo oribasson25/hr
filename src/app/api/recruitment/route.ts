@@ -6,7 +6,7 @@ export async function GET() {
     const assignments = await prisma.jobAssignment.findMany({
       where: { status: { notIn: ["not_relevant", "future"] } },
       include: {
-        candidate: { select: { id: true, fullName: true, phone: true, email: true } },
+        candidate: { select: { id: true, fullName: true, phone: true, email: true, hrStaffId: true } },
         job: { select: { id: true, title: true, status: true } },
       },
       orderBy: { updatedAt: "desc" },

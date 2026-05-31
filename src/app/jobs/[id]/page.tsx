@@ -4,7 +4,7 @@ import { useState } from "react";
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, MoreVertical, Edit, CheckCircle, Trash2, RotateCcw, AlertCircle, Bell } from "lucide-react";
+import { ArrowRight, MoreVertical, Edit, CheckCircle, Trash2, RotateCcw, AlertCircle, Bell, DollarSign, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,9 +25,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AppShell from "@/components/layout/AppShell";
 import KanbanBoard from "@/components/kanban/KanbanBoard";
 import JobForm from "@/components/jobs/JobForm";
+import CandidateForm from "@/components/candidates/CandidateForm";
 import ReminderForm from "@/components/reminders/ReminderForm";
 import { useJob, useUpdateJob, useDeleteJob } from "@/lib/api/jobs";
 import { useCreateReminder } from "@/lib/api/reminders";
+import { useCreateCandidate } from "@/lib/api/candidates";
 
 export default function JobPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -36,13 +38,15 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
   const [showFillConfirm, setShowFillConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReminderForm, setShowReminderForm] = useState(false);
+  const [showNewCandidate, setShowNewCandidate] = useState(false);
 
   const { data: job, isLoading } = useJob(id);
   const updateJob = useUpdateJob(id);
   const deleteJob = useDeleteJob();
   const createReminder = useCreateReminder();
+  const createCandidate = useCreateCandidate();
 
-  const handleUpdate = async (data: { title: string; description: string; requirements: string }) => {
+  const handleUpdate = async (data: { title: string; description: string; requirements: string; salaryBudget?: string }) => {
     const result = await updateJob.mutateAsync(data);
     if (!result.error) toast.success("המשרה עודכנה"); else toast.error("שגיאה");
   };
@@ -68,6 +72,29 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
     const result = await createReminder.mutateAsync({ ...data, jobId: id });
     if (result.id) toast.success("התזכורת נוספה");
     else toast.error("שגיאה בהוספת תזכורת");
+  };
+
+  const handleCreateCandidate = async (data: Parameters<typeof CandidateForm>[0]["onSubmit"] extends (d: infer D) => unknown ? D : never) => {
+    const fd = new FormData();
+    fd.append("fullName", data.fullName);
+    fd.append("phone", data.phone);
+    if (data.email) fd.append("email", data.email);
+    if (data.address) fd.append("address", data.address);
+    fd.append("appliedForJobId", id);
+    if (data.source) fd.append("source", data.source);
+    if (data.referredById) fd.append("referredById", data.referredById);
+    if (data.salaryExpectation) fd.append("salaryExpectation", data.salaryExpectation);
+    if (data.hrStaffId) fd.append("hrStaffId", data.hrStaffId);
+    if (data.cv) fd.append("cv", data.cv);
+
+    const result = await createCandidate.mutateAsync(fd);
+    if (result.id) {
+      toast.success("המועמד נוצר ושויך למשרה");
+    } else {
+      const msg = typeof result.error === "string" ? result.error : "שגיאה ביצירת מועמד";
+      toast.error(msg);
+      throw new Error(msg);
+    }
   };
 
   if (isLoading) {
@@ -112,20 +139,15 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
                 המשרה נסגרה{job.filledAt && ` ב-${new Date(job.filledAt).toLocaleDateString("he-IL")}`}
               </span>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleReopen}
-              className="rounded-xl gap-2 text-green-700 border-green-300 hover:bg-green-50"
-            >
+            <Button size="sm" variant="outline" onClick={handleReopen} className="rounded-xl gap-2 text-green-700 border-green-300 hover:bg-green-50">
               <RotateCcw className="w-4 h-4" />
               פתח מחדש
             </Button>
           </div>
         )}
 
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start gap-3 flex-wrap">
             <h1 className="text-3xl font-bold text-brand-black">{job.title}</h1>
             <Badge className={`rounded-full ${isFilled ? "bg-brand-black text-white" : "bg-brand-yellow text-brand-black"}`}>
               {isFilled ? "נסגרה" : "פתוחה"}
@@ -141,38 +163,56 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
               </div>
             )}
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-input bg-background hover:bg-accent transition-colors">
-              <MoreVertical className="w-4 h-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setShowEdit(true)} className="gap-2">
-                <Edit className="w-4 h-4" />
-                עריכה
-              </DropdownMenuItem>
-              {isFilled ? (
-                <DropdownMenuItem onClick={handleReopen} className="gap-2">
-                  <RotateCcw className="w-4 h-4" />
-                  פתח מחדש
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setShowNewCandidate(true)}
+              className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold gap-2"
+            >
+              <UserPlus className="w-4 h-4" />
+              מועמד חדש
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-input bg-background hover:bg-accent transition-colors">
+                <MoreVertical className="w-4 h-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setShowEdit(true)} className="gap-2">
+                  <Edit className="w-4 h-4" />
+                  עריכה
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => setShowFillConfirm(true)} className="gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  סמן כנסגרה
+                {isFilled ? (
+                  <DropdownMenuItem onClick={handleReopen} className="gap-2">
+                    <RotateCcw className="w-4 h-4" />
+                    פתח מחדש
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setShowFillConfirm(true)} className="gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    סמן כנסגרה
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setShowReminderForm(true)} className="gap-2">
+                  <Bell className="w-4 h-4" />
+                  הוסף תזכורת
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => setShowReminderForm(true)} className="gap-2">
-                <Bell className="w-4 h-4" />
-                הוסף תזכורת
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowDeleteConfirm(true)} className="text-red-600 focus:text-red-600 gap-2">
-                <Trash2 className="w-4 h-4" />
-                מחיקה
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowDeleteConfirm(true)} className="text-red-600 focus:text-red-600 gap-2">
+                  <Trash2 className="w-4 h-4" />
+                  מחיקה
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {job.salaryBudget && (
+          <div className="flex items-center gap-2 mb-6 text-sm text-brand-gray">
+            <DollarSign className="w-4 h-4 text-green-600" />
+            <span>תקציב שכר:</span>
+            <span className="font-semibold text-brand-black">{job.salaryBudget}</span>
+          </div>
+        )}
 
         <Tabs defaultValue="board" className="mb-6">
           <TabsList className="rounded-xl bg-brand-gray-light">
@@ -184,6 +224,12 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           </TabsContent>
           <TabsContent value="details" className="mt-6">
             <div className="bg-white rounded-2xl border border-brand-gray-border p-6 space-y-6">
+              {job.salaryBudget && (
+                <div>
+                  <h3 className="font-semibold text-brand-black mb-2">תקציב שכר</h3>
+                  <p className="text-brand-gray">{job.salaryBudget}</p>
+                </div>
+              )}
               <div>
                 <h3 className="font-semibold text-brand-black mb-2">תיאור</h3>
                 <p className="text-brand-gray whitespace-pre-wrap">{job.description}</p>
@@ -204,6 +250,15 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
         defaultValues={job}
         title="עריכת משרה"
         loading={updateJob.isPending}
+      />
+
+      <CandidateForm
+        open={showNewCandidate}
+        onClose={() => setShowNewCandidate(false)}
+        onSubmit={handleCreateCandidate}
+        title={`מועמד חדש — ${job.title}`}
+        loading={createCandidate.isPending}
+        preselectedJobId={id}
       />
 
       <Dialog open={showFillConfirm} onOpenChange={setShowFillConfirm}>

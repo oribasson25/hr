@@ -6,6 +6,7 @@ const jobSchema = z.object({
   title: z.string().min(1, "נדרשת כותרת"),
   description: z.string().min(1, "נדרש תיאור"),
   requirements: z.string().min(1, "נדרשות דרישות"),
+  salaryBudget: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -44,7 +45,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const data = jobSchema.parse(body);
-    const job = await prisma.job.create({ data });
+    const job = await prisma.job.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        requirements: data.requirements,
+        salaryBudget: data.salaryBudget || null,
+      },
+    });
     return NextResponse.json(job, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -3,15 +3,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, Users, FileText, Bell, LogOut, Download, BookOpen, ScanSearch, GitMerge } from "lucide-react";
+import { Briefcase, Users, FileText, Bell, LogOut, Download, BookOpen, ScanSearch, GitMerge, LayoutDashboard, UserCog } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingRemindersCount } from "@/lib/api/reminders";
 import { toast } from "sonner";
 
 const staticNavItems = [
+  { href: "/dashboard", label: "דשבורד", icon: LayoutDashboard },
   { href: "/jobs", label: "משרות", icon: Briefcase },
   { href: "/candidates", label: "מועמדים", icon: Users },
   { href: "/recruitment", label: "תהליכי גיוס", icon: GitMerge },
+  { href: "/hr-staff", label: "עובדי HR", icon: UserCog },
   { href: "/cvs", label: "כל קורות החיים", icon: FileText },
   { href: "/matcher", label: "התאמת קורות חיים", icon: ScanSearch },
   { href: "/guide", label: "מדריך למשתמש", icon: BookOpen },
@@ -50,17 +52,10 @@ export default function Sidebar() {
   return (
     <aside className="fixed top-0 right-0 h-full w-60 bg-white border-l border-brand-gray-border z-40 flex flex-col">
       <div className="p-5 border-b border-brand-gray-border flex items-center justify-center">
-        <Image
-          src="/libra-logo.png"
-          alt="Libra"
-          width={120}
-          height={120}
-          className="rounded-xl"
-          priority
-        />
+        <Image src="/libra-logo.png" alt="Libra" width={120} height={120} className="rounded-xl" priority />
       </div>
 
-      <nav className="flex-1 py-4 px-3">
+      <nav className="flex-1 py-4 px-3 overflow-y-auto">
         {staticNavItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (

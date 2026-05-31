@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Users, FileText, Bell, Download, ChevronRight, ChevronLeft,
   Plus, Search, Kanban, Upload, RefreshCw, Trash2, AlertCircle, BookOpen,
-  CheckCircle, Phone, ScanSearch, GitMerge,
+  CheckCircle, Phone, ScanSearch, GitMerge, LayoutDashboard, UserCog, X,
 } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
 
@@ -295,6 +295,92 @@ const SLIDES: Slide[] = [
   },
   {
     id: 10,
+    title: "עובדי HR ומקורות הגעה",
+    subtitle: "שיוך אחראי ומעקב אחר מקורות גיוס",
+    icon: <UserCog className="w-10 h-10" />,
+    color: "from-violet-500 to-purple-400",
+    content: (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: "חבר מביא חבר", color: "bg-purple-50 border-purple-200 text-purple-800" },
+            { label: "לינקדאין", color: "bg-blue-50 border-blue-200 text-blue-800" },
+            { label: "פייסבוק", color: "bg-indigo-50 border-indigo-200 text-indigo-800" },
+            { label: "אתר משרות", color: "bg-green-50 border-green-200 text-green-800" },
+          ].map((s, i) => (
+            <div key={i} className={`border-2 rounded-xl p-2 text-center text-xs font-semibold ${s.color}`}>
+              {s.label}
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text='גשו ל"עובדי HR" בסרגל הניווט להגדרת צוות המגייסים' />
+          <Step num={2} text="בהקמת מועמד — בחרו איש HR אחראי ומקור ההגעה" />
+          <Step num={3} text='אם בחרתם "חבר מביא חבר" — תוכלו לבחור מי הפנה את המועמד' />
+          <Step num={4} text="סנן לפי איש HR בתהליכי גיוס ובלוח קנבן של כל משרה" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 11,
+    title: "תקציב שכר וציפיות",
+    subtitle: "ניהול תקציבי שכר למשרות ולמועמדים",
+    icon: <Download className="w-10 h-10" />,
+    color: "from-teal-500 to-emerald-400",
+    content: (
+      <div className="space-y-5">
+        <div className="space-y-2">
+          {[
+            { label: "תקציב שכר למשרה", desc: "מוצג בראש עמוד המשרה — לדוגמה: 20,000-30,000 ₪", color: "bg-green-50 border-green-200" },
+            { label: "ציפיות שכר למועמד", desc: "מוצג בפרטי המועמד — לדוגמה: 22,000 ₪", color: "bg-blue-50 border-blue-200" },
+            { label: "סיבת דחייה", desc: "כשמסמנים נדחה — חובה לרשום סיבה לתיעוד", color: "bg-red-50 border-red-200" },
+          ].map((t, i) => (
+            <div key={i} className={`border rounded-xl p-3 ${t.color}`}>
+              <div className="font-semibold text-sm text-brand-black">{t.label}</div>
+              <div className="text-xs text-brand-gray mt-0.5">{t.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text="בהקמת משרה — הוסיפו תקציב שכר בשדה 'תקציב שכר'" />
+          <Step num={2} text="בהקמת מועמד — הוסיפו ציפיות שכר בשדה 'ציפיות שכר'" />
+          <Step num={3} text='בסימון "נדחה" בעמוד מועמד — יופיע דיאלוג לרישום סיבת הדחייה' />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 12,
+    title: "דשבורד",
+    subtitle: "סקירה ויזואלית של כל פעילות הגיוס",
+    icon: <LayoutDashboard className="w-10 h-10" />,
+    color: "from-slate-600 to-gray-500",
+    content: (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
+          {[
+            { label: "KPI cards", desc: "מועמדים, משרות, גיוסים, תהליכים", color: "bg-blue-50 border-blue-200 text-blue-800" },
+            { label: "גרפי עמודות", desc: "שלבי גיוס ומקורות הגעה", color: "bg-purple-50 border-purple-200 text-purple-800" },
+            { label: "פעילות אחרונה", desc: "עדכונים אחרונים בזמן אמת", color: "bg-green-50 border-green-200 text-green-800" },
+          ].map((s, i) => (
+            <div key={i} className={`border-2 rounded-xl p-3 ${s.color}`}>
+              <div className="font-bold mb-1">{s.label}</div>
+              <div className="opacity-80">{s.desc}</div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          <Step num={1} text='לחצו על "דשבורד" בראש הסרגל הצדדי לסקירה מלאה' />
+          <Step num={2} text="ה-KPI מציג: מועמדים כולל, משרות פתוחות, תהליכים פעילים וגיוסים" />
+          <Step num={3} text="גרף גיוסים חודשי מציג 6 חודשים אחרונים" />
+          <Step num={4} text="טבלת פעילות אחרונה מציגה עדכוני שלבים בזמן אמת" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 14,
     title: "התאמת קורות חיים",
     subtitle: "מצאו את המועמד המתאים לכל משרה ללא AI",
     icon: <ScanSearch className="w-10 h-10" />,

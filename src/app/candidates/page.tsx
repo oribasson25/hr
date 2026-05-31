@@ -34,10 +34,14 @@ export default function CandidatesPage() {
     const fd = new FormData();
     fd.append("fullName", data.fullName);
     fd.append("phone", data.phone);
-    fd.append("email", data.email);
+    if (data.email) fd.append("email", data.email);
     if (data.address) fd.append("address", data.address);
     if (data.appliedForJobId) fd.append("appliedForJobId", data.appliedForJobId);
     if (data.appliedForCustom) fd.append("appliedForCustom", data.appliedForCustom);
+    if (data.source) fd.append("source", data.source);
+    if (data.referredById) fd.append("referredById", data.referredById);
+    if (data.salaryExpectation) fd.append("salaryExpectation", data.salaryExpectation);
+    if (data.hrStaffId) fd.append("hrStaffId", data.hrStaffId);
     if (data.cv) fd.append("cv", data.cv);
 
     const result = await createCandidate.mutateAsync(fd);

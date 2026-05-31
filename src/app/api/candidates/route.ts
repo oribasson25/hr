@@ -7,10 +7,14 @@ import { cuid } from "@/lib/cuid";
 const candidateSchema = z.object({
   fullName: z.string().min(1, "נדרש שם מלא"),
   phone: z.string().min(9, "מספר טלפון לא תקין"),
-  email: z.string().email("כתובת אימייל לא תקינה"),
+  email: z.string().email("כתובת אימייל לא תקינה").optional().or(z.literal("")),
   address: z.string().optional(),
   appliedForJobId: z.string().optional(),
   appliedForCustom: z.string().optional(),
+  source: z.enum(["referral", "linkedin", "facebook", "job_board"]).optional(),
+  referredById: z.string().optional(),
+  salaryExpectation: z.string().optional(),
+  hrStaffId: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -22,6 +26,7 @@ export async function GET(req: NextRequest) {
     const assigned = searchParams.get("assigned");
     const jobId = searchParams.get("jobId");
     const kanbanStatus = searchParams.get("kanbanStatus");
+    const hrStaffId = searchParams.get("hrStaffId");
 
     const where: Record<string, unknown> = {};
 
@@ -35,6 +40,7 @@ export async function GET(req: NextRequest) {
 
     if (hasCv === "true") where.cvFilePath = { not: null };
     if (hasCv === "false") where.cvFilePath = null;
+    if (hrStaffId) where.hrStaffId = hrStaffId;
 
     if (jobId) {
       where.assignments = { some: { jobId } };
@@ -54,6 +60,7 @@ export async function GET(req: NextRequest) {
           include: { job: { select: { id: true, title: true, status: true } } },
           where: statusFilter ? { status: statusFilter } : undefined,
         },
+        hrStaff: { select: { id: true, name: true } },
         _count: { select: { assignments: true } },
       },
     });
@@ -72,10 +79,14 @@ export async function POST(req: NextRequest) {
     const fields = {
       fullName: formData.get("fullName") as string,
       phone: formData.get("phone") as string,
-      email: formData.get("email") as string,
+      email: (formData.get("email") as string) || undefined,
       address: (formData.get("address") as string) || undefined,
       appliedForJobId: (formData.get("appliedForJobId") as string) || undefined,
       appliedForCustom: (formData.get("appliedForCustom") as string) || undefined,
+      source: (formData.get("source") as string) || undefined,
+      referredById: (formData.get("referredById") as string) || undefined,
+      salaryExpectation: (formData.get("salaryExpectation") as string) || undefined,
+      hrStaffId: (formData.get("hrStaffId") as string) || undefined,
     };
 
     const data = candidateSchema.parse(fields);
@@ -114,9 +125,13 @@ export async function POST(req: NextRequest) {
       data: {
         fullName: data.fullName,
         phone: data.phone,
-        email: data.email,
+        email: data.email || null,
         address: data.address || null,
         appliedForCustom: data.appliedForCustom || null,
+        source: data.source || null,
+        referredById: data.referredById || null,
+        salaryExpectation: data.salaryExpectation || null,
+        hrStaffId: data.hrStaffId || null,
         cvFileName: cvFileName || null,
         cvFilePath: cvFilePath || null,
         cvFileType: cvFileType || null,

@@ -3,7 +3,7 @@
 import { use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar } from "lucide-react";
+import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +19,14 @@ import { useCandidate, useUpdateCandidate, useDeleteCandidate, useUploadCV, useD
 import { useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/notes";
 import { useCreateReminder } from "@/lib/api/reminders";
 import { useUpdateRecruitmentStage } from "@/lib/api/recruitment";
-import type { RecruitmentStage } from "@/types/api";
+import type { RecruitmentStage, CandidateSource } from "@/types/api";
+
+const SOURCE_LABELS: Record<CandidateSource, string> = {
+  referral: "חבר מביא חבר",
+  linkedin: "לינקדאין",
+  facebook: "פייסבוק",
+  job_board: "אתר משרות",
+};
 
 const STATUS_LABELS: Record<string, string> = {
   leading: "מוביל",
@@ -45,6 +52,8 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const [editingNoteContent, setEditingNoteContent] = useState("");
   const [stageDialog, setStageDialog] = useState<{ assignmentId: string; type: "interview" | "hired"; jobTitle: string } | null>(null);
   const [stageDate, setStageDate] = useState("");
+  const [rejectionDialog, setRejectionDialog] = useState<{ assignmentId: string; jobTitle: string } | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const cvInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,9 +72,13 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
     const result = await updateCandidate.mutateAsync({
       fullName: data.fullName,
       phone: data.phone,
-      email: data.email,
+      email: data.email || null,
       address: data.address || null,
       appliedForCustom: data.appliedForCustom || null,
+      source: data.source || null,
+      referredById: data.referredById || null,
+      salaryExpectation: data.salaryExpectation || null,
+      hrStaffId: data.hrStaffId || null,
     });
     if (!result.error) toast.success("המועמד עודכן");
   };
@@ -142,6 +155,22 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
     setStageDate("");
   };
 
+  const handleRejectionConfirm = async () => {
+    if (!rejectionDialog) return;
+    if (!rejectionReason.trim()) {
+      toast.error("נא לרשום סיבת דחייה");
+      return;
+    }
+    await updateRecruitmentStage.mutateAsync({
+      id: rejectionDialog.assignmentId,
+      recruitmentStage: "rejected",
+      rejectionReason: rejectionReason.trim(),
+    });
+    toast.success("המועמד סומן כנדחה");
+    setRejectionDialog(null);
+    setRejectionReason("");
+  };
+
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     await createNote.mutateAsync(newNote.trim());
@@ -208,17 +237,51 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
 
               <div className="space-y-2 text-sm">
                 <div className="flex gap-2">
-                  <span className="text-brand-gray w-16 flex-shrink-0">טלפון:</span>
+                  <span className="text-brand-gray w-20 flex-shrink-0">טלפון:</span>
                   <a href={`tel:${candidate.phone}`} className="text-brand-black hover:underline">{candidate.phone}</a>
                 </div>
-                <div className="flex gap-2">
-                  <span className="text-brand-gray w-16 flex-shrink-0">אימייל:</span>
-                  <a href={`mailto:${candidate.email}`} className="text-brand-black hover:underline truncate">{candidate.email}</a>
-                </div>
+                {candidate.email && (
+                  <div className="flex gap-2">
+                    <span className="text-brand-gray w-20 flex-shrink-0">אימייל:</span>
+                    <a href={`mailto:${candidate.email}`} className="text-brand-black hover:underline truncate">{candidate.email}</a>
+                  </div>
+                )}
                 {candidate.address && (
                   <div className="flex gap-2">
-                    <span className="text-brand-gray w-16 flex-shrink-0">כתובת:</span>
+                    <span className="text-brand-gray w-20 flex-shrink-0">כתובת:</span>
                     <span className="text-brand-black">{candidate.address}</span>
+                  </div>
+                )}
+                {candidate.salaryExpectation && (
+                  <div className="flex gap-2">
+                    <span className="text-brand-gray w-20 flex-shrink-0">ציפיות שכר:</span>
+                    <span className="text-brand-black font-medium">{candidate.salaryExpectation}</span>
+                  </div>
+                )}
+                {candidate.source && (
+                  <div className="flex gap-2">
+                    <span className="text-brand-gray w-20 flex-shrink-0">מקור:</span>
+                    <span className="text-brand-black">{SOURCE_LABELS[candidate.source]}</span>
+                  </div>
+                )}
+                {candidate.referredBy && (
+                  <div className="flex gap-2">
+                    <span className="text-brand-gray w-20 flex-shrink-0">הופנה על ידי:</span>
+                    <button
+                      onClick={() => router.push(`/candidates/${candidate.referredBy!.id}`)}
+                      className="text-brand-black hover:underline font-medium"
+                    >
+                      {candidate.referredBy.fullName}
+                    </button>
+                  </div>
+                )}
+                {candidate.hrStaff && (
+                  <div className="flex gap-2">
+                    <span className="text-brand-gray w-20 flex-shrink-0">איש HR:</span>
+                    <div className="flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-brand-gray" />
+                      <span className="text-brand-black">{candidate.hrStaff.name}</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -259,76 +322,34 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
             <div className="bg-white rounded-2xl border border-brand-gray-border p-4 space-y-2">
               {candidate.cvFilePath ? (
                 <>
-                  <Button
-                    onClick={() => setShowCV(true)}
-                    className="w-full rounded-xl gap-2"
-                  >
+                  <Button onClick={() => setShowCV(true)} className="w-full rounded-xl gap-2">
                     <FileText className="w-4 h-4" />
                     צפייה בקורות חיים
                   </Button>
-                  <input
-                    ref={cvInputRef}
-                    type="file"
-                    accept=".pdf,.docx"
-                    className="hidden"
-                    onChange={handleReplaceCV}
-                  />
-                  <Button
-                    onClick={() => cvInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full rounded-xl gap-2"
-                    size="sm"
-                    disabled={uploadCV.isPending}
-                  >
+                  <input ref={cvInputRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleReplaceCV} />
+                  <Button onClick={() => cvInputRef.current?.click()} variant="outline" className="w-full rounded-xl gap-2" size="sm" disabled={uploadCV.isPending}>
                     <RefreshCw className="w-4 h-4" />
                     {uploadCV.isPending ? "מחליף..." : "החלף קורות חיים"}
                   </Button>
-                  <Button
-                    onClick={handleDeleteCV}
-                    variant="ghost"
-                    className="w-full rounded-xl text-orange-500 hover:text-orange-600 hover:bg-orange-50 gap-2"
-                    size="sm"
-                    disabled={deleteCV.isPending}
-                  >
+                  <Button onClick={handleDeleteCV} variant="ghost" className="w-full rounded-xl text-orange-500 hover:text-orange-600 hover:bg-orange-50 gap-2" size="sm" disabled={deleteCV.isPending}>
                     <Trash2 className="w-4 h-4" />
                     מחיקת קורות חיים
                   </Button>
                 </>
               ) : (
                 <>
-                  <input
-                    ref={cvInputRef}
-                    type="file"
-                    accept=".pdf,.docx"
-                    className="hidden"
-                    onChange={handleReplaceCV}
-                  />
-                  <Button
-                    onClick={() => cvInputRef.current?.click()}
-                    variant="outline"
-                    className="w-full rounded-xl gap-2"
-                    disabled={uploadCV.isPending}
-                  >
+                  <input ref={cvInputRef} type="file" accept=".pdf,.docx" className="hidden" onChange={handleReplaceCV} />
+                  <Button onClick={() => cvInputRef.current?.click()} variant="outline" className="w-full rounded-xl gap-2" disabled={uploadCV.isPending}>
                     <FileText className="w-4 h-4" />
                     {uploadCV.isPending ? "מעלה..." : "העלאת קורות חיים"}
                   </Button>
                 </>
               )}
-              <Button
-                onClick={() => setShowReminderForm(true)}
-                variant="outline"
-                className="w-full rounded-xl gap-2"
-                size="sm"
-              >
+              <Button onClick={() => setShowReminderForm(true)} variant="outline" className="w-full rounded-xl gap-2" size="sm">
                 <Bell className="w-4 h-4" />
                 הוסף תזכורת
               </Button>
-              <Button
-                onClick={handleDelete}
-                variant="ghost"
-                className="w-full rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 gap-2"
-                size="sm"
-              >
+              <Button onClick={handleDelete} variant="ghost" className="w-full rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 gap-2" size="sm">
                 <Trash2 className="w-4 h-4" />
                 מחיקת מועמד
               </Button>
@@ -345,19 +366,8 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
               <TabsContent value="notes">
                 <div className="space-y-4">
                   <div className="bg-white rounded-2xl border border-brand-gray-border p-4 space-y-3">
-                    <Textarea
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="הוסיפי הערה..."
-                      rows={3}
-                      className="rounded-xl resize-none"
-                    />
-                    <Button
-                      onClick={handleAddNote}
-                      disabled={!newNote.trim() || createNote.isPending}
-                      size="sm"
-                      className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold gap-2"
-                    >
+                    <Textarea value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="הוסיפי הערה..." rows={3} className="rounded-xl resize-none" />
+                    <Button onClick={handleAddNote} disabled={!newNote.trim() || createNote.isPending} size="sm" className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold gap-2">
                       <Plus className="w-4 h-4" />
                       הוספת הערה
                     </Button>
@@ -371,12 +381,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                     <div key={note.id} className="bg-white rounded-2xl border border-brand-gray-border p-4">
                       {editingNoteId === note.id ? (
                         <div className="space-y-2">
-                          <Textarea
-                            value={editingNoteContent}
-                            onChange={(e) => setEditingNoteContent(e.target.value)}
-                            rows={3}
-                            className="rounded-xl resize-none"
-                          />
+                          <Textarea value={editingNoteContent} onChange={(e) => setEditingNoteContent(e.target.value)} rows={3} className="rounded-xl resize-none" />
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => handleSaveNote(note.id)} className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover gap-1">
                               <CheckCircle className="w-3 h-3" />
@@ -393,16 +398,10 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                               {new Date(note.createdAt).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                             </span>
                             <div className="flex gap-1">
-                              <button
-                                onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }}
-                                className="p-1.5 rounded-lg text-brand-gray hover:text-brand-black hover:bg-brand-gray-light transition-colors"
-                              >
+                              <button onClick={() => { setEditingNoteId(note.id); setEditingNoteContent(note.content); }} className="p-1.5 rounded-lg text-brand-gray hover:text-brand-black hover:bg-brand-gray-light transition-colors">
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteNote(note.id)}
-                                className="p-1.5 rounded-lg text-brand-gray hover:text-red-500 hover:bg-red-50 transition-colors"
-                              >
+                              <button onClick={() => handleDeleteNote(note.id)} className="p-1.5 rounded-lg text-brand-gray hover:text-red-500 hover:bg-red-50 transition-colors">
                                 <X className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -436,15 +435,17 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                         <div key={assignment.id} className="bg-white rounded-2xl border border-brand-gray-border p-5">
                           <div className="flex items-start justify-between mb-4">
                             <div>
-                              <button
-                                onClick={() => router.push(`/jobs/${assignment.jobId}`)}
-                                className="font-semibold text-brand-black hover:underline text-sm"
-                              >
+                              <button onClick={() => router.push(`/jobs/${assignment.jobId}`)} className="font-semibold text-brand-black hover:underline text-sm">
                                 {assignment.job?.title}
                               </button>
                               <p className="text-xs text-brand-gray mt-0.5">
                                 משויך מ-{new Date(assignment.createdAt).toLocaleDateString("he-IL")}
                               </p>
+                              {currentStage === "rejected" && assignment.rejectionReason && (
+                                <p className="text-xs text-red-500 mt-1 bg-red-50 px-2 py-1 rounded-lg">
+                                  סיבת דחייה: {assignment.rejectionReason}
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               {assignment.job?.status === "filled" && (
@@ -473,11 +474,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                                       }
                                     }}
                                     className={`flex-1 text-center py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
-                                      isActive
-                                        ? "bg-brand-yellow text-brand-black shadow-sm"
-                                        : isDone
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-brand-gray-light text-brand-gray hover:bg-yellow-50"
+                                      isActive ? "bg-brand-yellow text-brand-black shadow-sm" : isDone ? "bg-green-100 text-green-700" : "bg-brand-gray-light text-brand-gray hover:bg-yellow-50"
                                     }`}
                                   >
                                     {stage.label}
@@ -497,19 +494,18 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                                 setStageDialog({ assignmentId: assignment.id, type: "hired", jobTitle: assignment.job?.title ?? "" });
                               }}
                               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                currentStage === "hired"
-                                  ? "bg-green-500 text-white"
-                                  : "bg-green-50 text-green-700 hover:bg-green-100"
+                                currentStage === "hired" ? "bg-green-500 text-white" : "bg-green-50 text-green-700 hover:bg-green-100"
                               }`}
                             >
                               גויס
                             </button>
                             <button
-                              onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: "rejected" })}
+                              onClick={() => {
+                                setRejectionReason("");
+                                setRejectionDialog({ assignmentId: assignment.id, jobTitle: assignment.job?.title ?? "" });
+                              }}
                               className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                currentStage === "rejected"
-                                  ? "bg-red-500 text-white"
-                                  : "bg-red-50 text-red-600 hover:bg-red-100"
+                                currentStage === "rejected" ? "bg-red-500 text-white" : "bg-red-50 text-red-600 hover:bg-red-100"
                               }`}
                             >
                               נדחה
@@ -537,11 +533,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
       />
 
       {showCV && (
-        <CVPreview
-          candidate={candidate}
-          open={showCV}
-          onClose={() => setShowCV(false)}
-        />
+        <CVPreview candidate={candidate} open={showCV} onClose={() => setShowCV(false)} />
       )}
 
       <ReminderForm
@@ -552,6 +544,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
         contextLabel={candidate.fullName}
       />
 
+      {/* Stage dialog (interview / hired) */}
       <Dialog open={!!stageDialog} onOpenChange={(open) => { if (!open) { setStageDialog(null); setStageDate(""); } }}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
@@ -566,29 +559,47 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                 ? "בחרי תאריך לראיון — תיווצר תזכורת אוטומטית"
                 : "מתי המועמד מתחיל לעבוד?"}
             </Label>
-            <Input
-              type="date"
-              value={stageDate}
-              onChange={(e) => setStageDate(e.target.value)}
-              className="rounded-xl"
-              dir="ltr"
+            <Input type="date" value={stageDate} onChange={(e) => setStageDate(e.target.value)} className="rounded-xl" dir="ltr" />
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button onClick={handleStageDialogConfirm} disabled={updateRecruitmentStage.isPending || createReminder.isPending} className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold">
+              {stageDialog?.type === "interview" ? "קביעת ראיון" : "אישור גיוס"}
+            </Button>
+            <Button variant="outline" onClick={() => { setStageDialog(null); setStageDate(""); }} className="rounded-xl">ביטול</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection reason dialog */}
+      <Dialog open={!!rejectionDialog} onOpenChange={(open) => { if (!open) { setRejectionDialog(null); setRejectionReason(""); } }}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <X className="w-5 h-5" />
+              סיבת דחייה
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-2">
+            <Label className="text-sm text-brand-gray">
+              דחייה ל-{rejectionDialog?.jobTitle} — מה הסיבה?
+            </Label>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="לדוגמה: ציפיות שכר גבוהות, חסר ניסיון רלוונטי..."
+              rows={3}
+              className="rounded-xl resize-none"
             />
           </div>
           <DialogFooter className="gap-2 flex-row-reverse">
             <Button
-              onClick={handleStageDialogConfirm}
-              disabled={updateRecruitmentStage.isPending || createReminder.isPending}
-              className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold"
+              onClick={handleRejectionConfirm}
+              disabled={!rejectionReason.trim() || updateRecruitmentStage.isPending}
+              className="rounded-xl bg-red-500 text-white hover:bg-red-600 font-semibold"
             >
-              {stageDialog?.type === "interview" ? "קביעת ראיון" : "אישור גיוס"}
+              אישור דחייה
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => { setStageDialog(null); setStageDate(""); }}
-              className="rounded-xl"
-            >
-              ביטול
-            </Button>
+            <Button variant="outline" onClick={() => { setRejectionDialog(null); setRejectionReason(""); }} className="rounded-xl">ביטול</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

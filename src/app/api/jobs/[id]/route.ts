@@ -6,6 +6,7 @@ const updateSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().min(1).optional(),
   requirements: z.string().min(1).optional(),
+  salaryBudget: z.string().nullable().optional(),
   status: z.enum(["open", "filled"]).optional(),
   filledAt: z.string().nullable().optional(),
 });
@@ -17,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       include: {
         assignments: {
-          include: { candidate: true },
+          include: { candidate: { include: { hrStaff: { select: { id: true, name: true } } } } },
           orderBy: { position: "asc" },
         },
       },

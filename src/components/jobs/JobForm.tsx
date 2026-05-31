@@ -20,6 +20,7 @@ const schema = z.object({
   title: z.string().min(1, "נדרשת כותרת"),
   description: z.string().min(1, "נדרש תיאור"),
   requirements: z.string().min(1, "נדרשות דרישות"),
+  salaryBudget: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -40,6 +41,7 @@ export default function JobForm({ open, onClose, onSubmit, defaultValues, title 
       title: defaultValues?.title || "",
       description: defaultValues?.description || "",
       requirements: defaultValues?.requirements || "",
+      salaryBudget: defaultValues?.salaryBudget || "",
     },
   });
 
@@ -59,6 +61,10 @@ export default function JobForm({ open, onClose, onSubmit, defaultValues, title 
             <Label htmlFor="title">כותרת המשרה</Label>
             <Input id="title" {...register("title")} placeholder="לדוגמה: מפתח Full Stack" className="rounded-xl" />
             {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="salaryBudget">תקציב שכר</Label>
+            <Input id="salaryBudget" {...register("salaryBudget")} placeholder="לדוגמה: 20,000-30,000 ₪" className="rounded-xl" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="description">תיאור</Label>
