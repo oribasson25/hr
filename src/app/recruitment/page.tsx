@@ -189,6 +189,14 @@ export default function RecruitmentPage() {
                 </div>
               )}
               <span className="text-sm text-brand-gray">{filtered.length} תהליכים</span>
+              {filtered.length > 5 && (
+                <button
+                  onClick={() => setShowAll((v) => !v)}
+                  className="text-sm text-brand-gray hover:text-brand-black font-medium transition-colors"
+                >
+                  {showAll ? "הצג פחות ↑" : `הצג הכל (${filtered.length}) ↓`}
+                </button>
+              )}
             </div>
           </div>
 
@@ -223,16 +231,6 @@ export default function RecruitmentPage() {
                   </motion.div>
                 ))}
               </div>
-              {filtered.length > 5 && (
-                <div className="px-6 py-3 border-t border-brand-gray-border text-center">
-                  <button
-                    onClick={() => setShowAll((v) => !v)}
-                    className="text-sm text-brand-gray hover:text-brand-black font-medium transition-colors"
-                  >
-                    {showAll ? "הצג פחות ↑" : `הצג הכל (${filtered.length}) ↓`}
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>
