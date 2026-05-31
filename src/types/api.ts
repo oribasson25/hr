@@ -44,11 +44,11 @@ export interface Candidate {
   cvFileType: string | null;
   appliedForCustom: string | null;
   source: CandidateSource | null;
+  referredByName: string | null;
   salaryExpectation: string | null;
   hrStaffId: string | null;
   hrStaff?: HrStaff | null;
   referredById: string | null;
-  referredBy?: Pick<Candidate, "id" | "fullName"> | null;
   createdAt: string;
   updatedAt: string;
   assignments?: JobAssignment[];

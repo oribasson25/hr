@@ -42,6 +42,7 @@ model Candidate {
   cvFileType        String?
   appliedForCustom  String?
   source            String?
+  referredByName    String?
   salaryExpectation String?
   hrStaffId         String?
   hrStaff           HrStaff? @relation(fields: [hrStaffId], references: [id], onDelete: SetNull)

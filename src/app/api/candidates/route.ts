@@ -13,6 +13,7 @@ const candidateSchema = z.object({
   appliedForCustom: z.string().optional(),
   source: z.enum(["referral", "linkedin", "facebook", "job_board"]).optional(),
   referredById: z.string().optional(),
+  referredByName: z.string().optional(),
   salaryExpectation: z.string().optional(),
   hrStaffId: z.string().optional(),
 });
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
       appliedForCustom: (formData.get("appliedForCustom") as string) || undefined,
       source: (formData.get("source") as string) || undefined,
       referredById: (formData.get("referredById") as string) || undefined,
+      referredByName: (formData.get("referredByName") as string) || undefined,
       salaryExpectation: (formData.get("salaryExpectation") as string) || undefined,
       hrStaffId: (formData.get("hrStaffId") as string) || undefined,
     };
@@ -130,6 +132,7 @@ export async function POST(req: NextRequest) {
         appliedForCustom: data.appliedForCustom || null,
         source: data.source || null,
         referredById: data.referredById || null,
+        referredByName: data.referredByName || null,
         salaryExpectation: data.salaryExpectation || null,
         hrStaffId: data.hrStaffId || null,
         cvFileName: cvFileName || null,

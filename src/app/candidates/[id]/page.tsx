@@ -78,7 +78,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
       address: data.address || null,
       appliedForCustom: data.appliedForCustom || null,
       source: data.source || null,
-      referredById: data.referredById || null,
+      referredByName: data.referredByName || null,
       salaryExpectation: data.salaryExpectation || null,
       hrStaffId: data.hrStaffId || null,
     });
@@ -266,15 +266,10 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                     <span className="text-brand-black">{SOURCE_LABELS[candidate.source]}</span>
                   </div>
                 )}
-                {candidate.referredBy && (
+                {candidate.referredByName && (
                   <div className="flex gap-2">
                     <span className="text-brand-gray w-20 flex-shrink-0">הופנה על ידי:</span>
-                    <button
-                      onClick={() => router.push(`/candidates/${candidate.referredBy!.id}`)}
-                      className="text-brand-black hover:underline font-medium"
-                    >
-                      {candidate.referredBy.fullName}
-                    </button>
+                    <span className="text-brand-black font-medium">{candidate.referredByName}</span>
                   </div>
                 )}
                 {candidate.hrStaff && (

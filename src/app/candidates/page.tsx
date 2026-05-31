@@ -46,7 +46,7 @@ export default function CandidatesPage() {
     if (data.appliedForJobId) fd.append("appliedForJobId", data.appliedForJobId);
     if (data.appliedForCustom) fd.append("appliedForCustom", data.appliedForCustom);
     if (data.source) fd.append("source", data.source);
-    if (data.referredById) fd.append("referredById", data.referredById);
+    if (data.referredByName) fd.append("referredByName", data.referredByName);
     if (data.salaryExpectation) fd.append("salaryExpectation", data.salaryExpectation);
     if (data.hrStaffId) fd.append("hrStaffId", data.hrStaffId);
     if (data.cv) fd.append("cv", data.cv);

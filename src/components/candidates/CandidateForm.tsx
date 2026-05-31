@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useJobs } from "@/lib/api/jobs";
-import { useCandidates } from "@/lib/api/candidates";
 import { useHrStaff } from "@/lib/api/hr-staff";
 import type { Candidate, CandidateSource } from "@/types/api";
 
@@ -50,7 +49,7 @@ interface Props {
     appliedForCustom?: string;
     cv?: File;
     source?: CandidateSource;
-    referredById?: string;
+    referredByName?: string;
     salaryExpectation?: string;
     hrStaffId?: string;
   }) => Promise<void>;
@@ -66,11 +65,10 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
   const [appliedForJobId, setAppliedForJobId] = useState<string>(preselectedJobId || "");
   const [appliedForCustom, setAppliedForCustom] = useState<string>("");
   const [source, setSource] = useState<CandidateSource | "">(defaultValues?.source || "");
-  const [referredById, setReferredById] = useState<string>(defaultValues?.referredById || "");
+  const [referredByName, setReferredByName] = useState<string>(defaultValues?.referredByName || "");
   const [hrStaffId, setHrStaffId] = useState<string>(defaultValues?.hrStaffId || "");
 
   const { data: openJobs } = useJobs("open");
-  const { data: allCandidates } = useCandidates();
   const { data: hrStaff } = useHrStaff();
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
@@ -101,7 +99,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
     setAppliedForJobId(preselectedJobId || "");
     setAppliedForCustom("");
     setSource("");
-    setReferredById("");
+    setReferredByName("");
     setHrStaffId("");
     onClose();
   };
@@ -114,7 +112,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
         appliedForJobId: appliedForJobId && appliedForJobId !== "custom" ? appliedForJobId : undefined,
         appliedForCustom: appliedForJobId === "custom" ? appliedForCustom : undefined,
         source: source || undefined,
-        referredById: source === "referral" && referredById ? referredById : undefined,
+        referredByName: source === "referral" && referredByName ? referredByName : undefined,
         hrStaffId: hrStaffId || undefined,
       });
       handleClose();
@@ -129,10 +127,6 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
 
   const selectedHrName = hrStaffId
     ? hrStaff?.find(s => s.id === hrStaffId)?.name
-    : undefined;
-
-  const selectedReferrerName = referredById
-    ? allCandidates?.find(c => c.id === referredById)?.fullName
     : undefined;
 
   return (
@@ -174,7 +168,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
           {/* Source */}
           <div className="space-y-1.5">
             <Label>מקור הגעה</Label>
-            <Select value={source} onValueChange={(v) => { setSource((v ?? "") as CandidateSource | ""); if (v !== "referral") setReferredById(""); }}>
+            <Select value={source} onValueChange={(v) => { setSource((v ?? "") as CandidateSource | ""); if (v !== "referral") setReferredByName(""); }}>
               <SelectTrigger className="rounded-xl w-full">
                 <SelectValue>
                   {source
@@ -197,22 +191,14 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
           {/* Referral person */}
           {source === "referral" && (
             <div className="space-y-1.5">
-              <Label>מי הפנה?</Label>
-              <Select value={referredById} onValueChange={(v) => setReferredById(v ?? "")}>
-                <SelectTrigger className="rounded-xl w-full">
-                  <SelectValue>
-                    {selectedReferrerName
-                      ? <span>{selectedReferrerName}</span>
-                      : <span className="text-muted-foreground">בחרי מועמד שהפנה...</span>
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {allCandidates?.filter((c) => c.id !== defaultValues?.id).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.fullName} — {c.phone}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="referredByName">מי הפנה?</Label>
+              <Input
+                id="referredByName"
+                value={referredByName}
+                onChange={(e) => setReferredByName(e.target.value)}
+                placeholder="שם המפנה..."
+                className="rounded-xl"
+              />
             </div>
           )}
 

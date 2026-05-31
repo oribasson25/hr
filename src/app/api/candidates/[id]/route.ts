@@ -8,8 +8,9 @@ const updateSchema = z.object({
   email: z.string().email().nullable().optional().or(z.literal("")),
   address: z.string().nullable().optional(),
   appliedForCustom: z.string().nullable().optional(),
-  source: z.enum(["referral", "linkedin", "facebook", "job_board"]).nullable().optional(),
+  source: z.enum(["referral", "linkedin", "facebook", "job_board", "instagram", "tiktok"]).nullable().optional(),
   referredById: z.string().nullable().optional(),
+  referredByName: z.string().nullable().optional(),
   salaryExpectation: z.string().nullable().optional(),
   hrStaffId: z.string().nullable().optional(),
 });
@@ -52,6 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         ...(data.appliedForCustom !== undefined && { appliedForCustom: data.appliedForCustom }),
         ...(data.source !== undefined && { source: data.source }),
         ...(data.referredById !== undefined && { referredById: data.referredById }),
+        ...(data.referredByName !== undefined && { referredByName: data.referredByName }),
         ...(data.salaryExpectation !== undefined && { salaryExpectation: data.salaryExpectation }),
         ...(data.hrStaffId !== undefined && { hrStaffId: data.hrStaffId }),
       },
