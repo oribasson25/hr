@@ -2,7 +2,6 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import CandidateCard from "./CandidateCard";
 import type { JobAssignment, AssignmentStatus, Candidate } from "@/types/api";
 
@@ -33,7 +32,7 @@ export default function KanbanColumn({ id, label, color, assignments, jobId, dis
         </span>
       </div>
 
-      <ScrollArea className="flex-1 px-3 pb-3">
+      <div className="flex-1 px-3 pb-3 overflow-y-auto">
         <SortableContext items={assignments.map((a) => a.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {assignments.map((assignment) => (
@@ -49,7 +48,7 @@ export default function KanbanColumn({ id, label, color, assignments, jobId, dis
         {assignments.length === 0 && (
           <div className="text-center py-6 text-brand-gray text-xs opacity-70">גרור מועמד לכאן</div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
