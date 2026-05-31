@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { get } from "@vercel/blob";
 
 export async function GET(req: NextRequest) {
   const blobUrl = req.nextUrl.searchParams.get("url");
   if (!blobUrl) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) {
+    console.error("cv-file: BLOB_READ_WRITE_TOKEN not set");
+    return NextResponse.json({ error: "Storage not configured" }, { status: 500 });
+  }
+
   try {
-    const result = await get(blobUrl, { access: "private" });
-    if (!result) return NextResponse.json({ error: "קובץ לא נמצא" }, { status: 404 });
+    const response = await fetch(blobUrl, {
+      headers: { authorization: `Bearer ${token}` },
+    });
 
-    const contentType = result.blob.contentType || "application/octet-stream";
+    if (!response.ok) {
+      console.error(`cv-file: blob returned ${response.status} for ${blobUrl}`);
+      return NextResponse.json({ error: `Storage error ${response.status}` }, { status: 500 });
+    }
 
-    return new NextResponse(result.stream as ReadableStream, {
+    return new NextResponse(response.body, {
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": response.headers.get("content-type") || "application/octet-stream",
         "Content-Disposition": "inline",
         "Cache-Control": "private, max-age=3600",
       },
