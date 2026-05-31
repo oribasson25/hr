@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, AlertCircle } from "lucide-react";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface Props {
   filePath: string;
@@ -16,6 +16,17 @@ export default function PDFViewer({ filePath }: Props) {
   const [numPages, setNumPages] = useState<number>(0);
   const [page, setPage] = useState(1);
   const [scale, setScale] = useState(1.0);
+  const [error, setError] = useState<string | null>(null);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
+        <AlertCircle className="w-10 h-10 text-red-400" />
+        <p className="text-red-600 font-medium">שגיאה בטעינת ה-PDF</p>
+        <p className="text-sm text-brand-gray">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -60,9 +71,9 @@ export default function PDFViewer({ filePath }: Props) {
       <div className="flex-1 overflow-auto bg-gray-100 flex justify-center p-4">
         <Document
           file={filePath}
-          onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+          onLoadSuccess={({ numPages }) => { setNumPages(numPages); setError(null); }}
+          onLoadError={(err) => setError(err.message)}
           loading={<div className="animate-pulse bg-white rounded w-full max-w-lg h-96" />}
-          error={<div className="text-center text-red-500 py-8">שגיאה בטעינת ה-PDF</div>}
         >
           <Page
             pageNumber={page}
