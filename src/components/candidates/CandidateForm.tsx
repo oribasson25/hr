@@ -38,6 +38,8 @@ const SOURCE_LABELS: Record<CandidateSource, string> = {
   linkedin: "לינקדאין",
   facebook: "פייסבוק",
   job_board: "אתר משרות",
+  instagram: "אינסטגרם",
+  tiktok: "טיקטוק",
 };
 
 interface Props {
@@ -183,9 +185,11 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="referral">חבר מביא חבר</SelectItem>
-                <SelectItem value="linkedin">לינקדאין</SelectItem>
+                <SelectItem value="instagram">אינסטגרם</SelectItem>
                 <SelectItem value="facebook">פייסבוק</SelectItem>
+                <SelectItem value="tiktok">טיקטוק</SelectItem>
                 <SelectItem value="job_board">אתר משרות</SelectItem>
+                <SelectItem value="linkedin">לינקדאין</SelectItem>
               </SelectContent>
             </Select>
           </div>

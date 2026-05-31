@@ -26,6 +26,8 @@ const SOURCE_LABELS: Record<CandidateSource, string> = {
   linkedin: "לינקדאין",
   facebook: "פייסבוק",
   job_board: "אתר משרות",
+  instagram: "אינסטגרם",
+  tiktok: "טיקטוק",
 };
 
 const STATUS_LABELS: Record<string, string> = {
