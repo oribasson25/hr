@@ -173,12 +173,17 @@ function ReminderRow({
           {reminder.title}
         </span>
         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-          {reminder.dueDate && (
-            <span className={`text-xs ${isOverdue ? "text-red-600 font-medium" : "text-brand-gray"}`}>
-              {isOverdue ? "⚠ " : ""}
-              {new Date(reminder.dueDate).toLocaleDateString("he-IL")}
-            </span>
-          )}
+          {reminder.dueDate && (() => {
+            const d = new Date(reminder.dueDate);
+            const hasTime = d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0;
+            return (
+              <span className={`text-xs ${isOverdue ? "text-red-600 font-medium" : "text-brand-gray"}`}>
+                {isOverdue ? "⚠ " : ""}
+                {d.toLocaleDateString("he-IL")}
+                {hasTime ? ` ${d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}` : ""}
+              </span>
+            );
+          })()}
           {reminder.job && (
             <button
               onClick={onNavigateJob}
