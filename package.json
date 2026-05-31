@@ -10,7 +10,7 @@
     "db:generate": "prisma generate",
     "db:seed": "ts-node --project tsconfig.json prisma/seed.ts",
     "db:push": "prisma db push",
-    "postinstall": "prisma generate && cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs"
+    "postinstall": "prisma generate && cp node_modules/react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs"
   },
   "prisma": {
     "seed": "ts-node --project tsconfig.json prisma/seed.ts"
