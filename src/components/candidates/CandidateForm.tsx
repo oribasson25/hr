@@ -121,6 +121,18 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
     }
   };
 
+  const selectedJobTitle = appliedForJobId && appliedForJobId !== "custom"
+    ? openJobs?.find(j => j.id === appliedForJobId)?.title
+    : appliedForJobId === "custom" ? "אחר (רשמי ידנית)" : undefined;
+
+  const selectedHrName = hrStaffId
+    ? hrStaff?.find(s => s.id === hrStaffId)?.name
+    : undefined;
+
+  const selectedReferrerName = referredById
+    ? allCandidates?.find(c => c.id === referredById)?.fullName
+    : undefined;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
@@ -157,11 +169,17 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
             <Input id="salaryExpectation" {...register("salaryExpectation")} placeholder="לדוגמה: 20,000-25,000 ₪" className="rounded-xl" />
           </div>
 
+          {/* Source */}
           <div className="space-y-1.5">
             <Label>מקור הגעה</Label>
-            <Select value={source} onValueChange={(v) => setSource((v ?? "") as CandidateSource | "")}>
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="בחרי מקור..." />
+            <Select value={source} onValueChange={(v) => { setSource((v ?? "") as CandidateSource | ""); if (v !== "referral") setReferredById(""); }}>
+              <SelectTrigger className="rounded-xl w-full">
+                <SelectValue>
+                  {source
+                    ? <span>{SOURCE_LABELS[source as CandidateSource]}</span>
+                    : <span className="text-muted-foreground">בחרי מקור...</span>
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="referral">חבר מביא חבר</SelectItem>
@@ -172,12 +190,18 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
             </Select>
           </div>
 
+          {/* Referral person */}
           {source === "referral" && (
             <div className="space-y-1.5">
               <Label>מי הפנה?</Label>
               <Select value={referredById} onValueChange={(v) => setReferredById(v ?? "")}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="בחרי מועמד/עובד שהפנה..." />
+                <SelectTrigger className="rounded-xl w-full">
+                  <SelectValue>
+                    {selectedReferrerName
+                      ? <span>{selectedReferrerName}</span>
+                      : <span className="text-muted-foreground">בחרי מועמד שהפנה...</span>
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {allCandidates?.filter((c) => c.id !== defaultValues?.id).map((c) => (
@@ -188,12 +212,18 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
             </div>
           )}
 
+          {/* HR Staff */}
           {hrStaff && hrStaff.length > 0 && (
             <div className="space-y-1.5">
               <Label>איש HR אחראי</Label>
               <Select value={hrStaffId} onValueChange={(v) => setHrStaffId(v ?? "")}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="בחרי איש HR..." />
+                <SelectTrigger className="rounded-xl w-full">
+                  <SelectValue>
+                    {selectedHrName
+                      ? <span>{selectedHrName}{hrStaff.find(s => s.id === hrStaffId)?.role ? ` — ${hrStaff.find(s => s.id === hrStaffId)?.role}` : ""}</span>
+                      : <span className="text-muted-foreground">בחרי איש HR...</span>
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {hrStaff.map((s) => (
@@ -204,12 +234,18 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
             </div>
           )}
 
+          {/* Job */}
           {!isEdit && (
             <div className="space-y-1.5">
               <Label>מתמודד למשרה</Label>
               <Select value={appliedForJobId} onValueChange={(v) => setAppliedForJobId(v ?? "")}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="בחרי משרה..." />
+                <SelectTrigger className="rounded-xl w-full">
+                  <SelectValue>
+                    {selectedJobTitle
+                      ? <span>{selectedJobTitle}</span>
+                      : <span className="text-muted-foreground">בחרי משרה...</span>
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {openJobs?.map((j) => (
@@ -234,6 +270,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
             </div>
           )}
 
+          {/* CV Upload */}
           <div className="space-y-1.5">
             <Label>קורות חיים (PDF / DOCX, עד 10MB)</Label>
             {cvFile ? (
