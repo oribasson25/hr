@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Users, Mail, Phone, Briefcase, X, Check } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Mail, Phone, Briefcase, AlertCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -93,7 +93,7 @@ export default function HrStaffPage() {
   const [editStaff, setEditStaff] = useState<HrStaff | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<HrStaff | null>(null);
 
-  const { data: staff, isLoading } = useHrStaff();
+  const { data: staff, isLoading, isError } = useHrStaff();
   const createStaff = useCreateHrStaff();
   const deleteStaff = useDeleteHrStaff();
 
@@ -133,7 +133,13 @@ export default function HrStaffPage() {
               <div key={i} className="bg-white rounded-2xl border border-brand-gray-border p-6 animate-pulse h-40" />
             ))}
           </div>
-        ) : staff?.length === 0 ? (
+        ) : isError ? (
+          <div className="text-center py-20">
+            <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-brand-black mb-2">שגיאה בטעינת עובדי HR</h2>
+            <p className="text-brand-gray text-sm">יש לוודא שה-migration הורץ על מסד הנתונים</p>
+          </div>
+        ) : !Array.isArray(staff) || staff.length === 0 ? (
           <div className="text-center py-20">
             <Users className="w-16 h-16 text-brand-gray-border mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-brand-black mb-2">אין עובדי HR עדיין</h2>
@@ -145,7 +151,7 @@ export default function HrStaffPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {staff?.map((s, i) => (
+            {(staff ?? []).map((s, i) => (
               <motion.div
                 key={s.id}
                 initial={{ opacity: 0, y: 12 }}

@@ -3,10 +3,16 @@ import type { HrStaff } from "@/types/api";
 
 const API = "/api/hr-staff";
 
+async function fetchHrStaff(): Promise<(HrStaff & { _count: { candidates: number } })[]> {
+  const res = await fetch(API);
+  if (!res.ok) throw new Error("שגיאה בטעינת עובדי HR");
+  return res.json();
+}
+
 export function useHrStaff() {
   return useQuery<(HrStaff & { _count: { candidates: number } })[]>({
     queryKey: ["hr-staff"],
-    queryFn: () => fetch(API).then((r) => r.json()),
+    queryFn: fetchHrStaff,
   });
 }
 
