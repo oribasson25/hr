@@ -63,6 +63,8 @@ model JobAssignment {
   position         Int       @default(0)
   recruitmentStage String    @default("cv_received")
   rejectionReason  String?
+  interviewRating  Int?
+  interviewSummary String?
   startDate        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
