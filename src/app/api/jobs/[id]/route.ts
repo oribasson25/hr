@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       include: {
         assignments: {
-          include: { candidate: { include: { hrStaff: { select: { id: true, name: true } } } } },
+          include: { candidate: { include: { hrStaff: { select: { id: true, name: true } }, notes: { orderBy: { createdAt: "desc" }, take: 1 } } } },
           orderBy: { position: "asc" },
         },
       },
