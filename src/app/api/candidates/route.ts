@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
         },
         hrStaff: { select: { id: true, name: true } },
         _count: { select: { assignments: true } },
+        notes: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     });
 
