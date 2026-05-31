@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Search, Users, FileText, Check, X } from "lucide-react";
+import { Plus, Search, Users, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AppShell from "@/components/layout/AppShell";
 import CandidateForm from "@/components/candidates/CandidateForm";
 import { useCandidates, useCreateCandidate } from "@/lib/api/candidates";
+import { useJobs } from "@/lib/api/jobs";
 import type { Candidate } from "@/types/api";
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -25,9 +27,14 @@ export default function CandidatesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [jobFilter, setJobFilter] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: candidates, isLoading } = useCandidates(debouncedSearch ? { search: debouncedSearch } : {});
+  const { data: allJobs } = useJobs();
+  const params: Record<string, string> = {};
+  if (debouncedSearch) params.search = debouncedSearch;
+  if (jobFilter) params.jobId = jobFilter;
+  const { data: candidates, isLoading } = useCandidates(params);
   const createCandidate = useCreateCandidate();
 
   const handleCreate = async (data: Parameters<typeof CandidateForm>[0]["onSubmit"] extends (d: infer D) => unknown ? D : never) => {
@@ -71,14 +78,37 @@ export default function CandidatesPage() {
           </Button>
         </div>
 
-        <div className="relative mb-6 max-w-md">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש לפי שם, אימייל, טלפון..."
-            className="pr-9 rounded-xl bg-white"
-          />
+        <div className="flex flex-wrap gap-3 mb-6">
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="חיפוש לפי שם, אימייל, טלפון..."
+              className="pr-9 rounded-xl bg-white"
+            />
+          </div>
+          <Select value={jobFilter} onValueChange={(v) => setJobFilter(v ?? "")}>
+            <SelectTrigger className="rounded-xl bg-white w-56">
+              <SelectValue>
+                {jobFilter
+                  ? <span>{allJobs?.find(j => j.id === jobFilter)?.title ?? "משרה"}</span>
+                  : <span className="text-muted-foreground">סינון לפי משרה...</span>
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {allJobs?.map((j) => (
+                <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {jobFilter && (
+            <Button variant="outline" onClick={() => setJobFilter("")} className="rounded-xl gap-1.5 text-sm">
+              <X className="w-3.5 h-3.5" />
+              נקה סינון
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
