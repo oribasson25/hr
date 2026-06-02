@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("reason") === "expired";
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +55,13 @@ export default function LoginPage() {
         </div>
 
         <h1 className="text-2xl font-bold text-brand-black mb-1">כניסה למערכת</h1>
-        <p className="text-brand-gray text-sm mb-6">הכניסי את פרטי הכניסה שלך</p>
+        <p className="text-brand-gray text-sm mb-4">הכניסי את פרטי הכניסה שלך</p>
+
+        {sessionExpired && (
+          <div className="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+            פג תוקף הסשן לאחר שעתיים — נא להתחבר מחדש
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -106,5 +114,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
