@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_NAME, verifyToken } from "@/lib/auth";
+import { COOKIE_NAME, computeToken } from "@/lib/auth";
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -16,11 +16,9 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const valid = await verifyToken(sessionCookie);
-  if (!valid) {
-    const url = new URL("/login", req.url);
-    url.searchParams.set("reason", "expired");
-    const res = NextResponse.redirect(url);
+  const expected = await computeToken();
+  if (sessionCookie !== expected) {
+    const res = NextResponse.redirect(new URL("/login", req.url));
     res.cookies.set(COOKIE_NAME, "", { maxAge: 0, path: "/" });
     return res;
   }

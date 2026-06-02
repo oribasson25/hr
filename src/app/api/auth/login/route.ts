@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createToken, COOKIE_NAME, COOKIE_MAX_AGE, USERNAME } from "@/lib/auth";
+import { computeToken, COOKIE_NAME, COOKIE_MAX_AGE, USERNAME } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { username, password } = await req.json();
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "שם משתמש או סיסמה שגויים" }, { status: 401 });
   }
 
-  const token = await createToken();
+  const token = await computeToken();
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(COOKIE_NAME, token, {
