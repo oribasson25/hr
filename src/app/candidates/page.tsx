@@ -51,12 +51,14 @@ export default function CandidatesPage() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [jobFilter, setJobFilter] = useState("");
+  const [stageFilter, setStageFilter] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: allJobs } = useJobs();
   const params: Record<string, string> = {};
   if (debouncedSearch) params.search = debouncedSearch;
   if (jobFilter) params.jobId = jobFilter;
+  if (stageFilter) params.recruitmentStage = stageFilter;
   const { data: candidates, isLoading } = useCandidates(params);
   const createCandidate = useCreateCandidate();
 
@@ -126,8 +128,24 @@ export default function CandidatesPage() {
               ))}
             </SelectContent>
           </Select>
-          {jobFilter && (
-            <Button variant="outline" onClick={() => setJobFilter("")} className="rounded-xl gap-1.5 text-sm">
+          <Select value={stageFilter} onValueChange={(v) => setStageFilter(!v || v === "_all" ? "" : v)}>
+            <SelectTrigger className="rounded-xl bg-white w-52">
+              <SelectValue>
+                {stageFilter
+                  ? <span>{STAGE_BADGE[stageFilter]?.label ?? stageFilter}</span>
+                  : <span className="text-muted-foreground">סינון לפי סטטוס...</span>
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">כל הסטטוסים</SelectItem>
+              {Object.entries(STAGE_BADGE).map(([key, { label }]) => (
+                <SelectItem key={key} value={key}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(jobFilter || stageFilter) && (
+            <Button variant="outline" onClick={() => { setJobFilter(""); setStageFilter(""); }} className="rounded-xl gap-1.5 text-sm">
               <X className="w-3.5 h-3.5" />
               נקה סינון
             </Button>

@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
     const jobId = searchParams.get("jobId");
     const kanbanStatus = searchParams.get("kanbanStatus");
     const hrStaffId = searchParams.get("hrStaffId");
+    const recruitmentStage = searchParams.get("recruitmentStage");
 
     const where: Record<string, unknown> = {};
 
@@ -43,8 +44,11 @@ export async function GET(req: NextRequest) {
     if (hasCv === "false") where.cvFilePath = null;
     if (hrStaffId) where.hrStaffId = hrStaffId;
 
-    if (jobId) {
-      where.assignments = { some: { jobId } };
+    if (jobId || recruitmentStage) {
+      const assignmentFilter: Record<string, unknown> = {};
+      if (jobId) assignmentFilter.jobId = jobId;
+      if (recruitmentStage) assignmentFilter.recruitmentStage = recruitmentStage;
+      where.assignments = { some: assignmentFilter };
     } else if (kanbanStatus) {
       where.assignments = { some: { status: kanbanStatus } };
     } else if (assigned === "true") {
