@@ -5,7 +5,7 @@ import { z } from "zod";
 const updateSchema = z.object({
   status: z.enum(["leading", "candidate", "not_relevant", "future"]).optional(),
   position: z.number().int().optional(),
-  recruitmentStage: z.enum(["cv_received", "interview", "offer", "hired", "rejected"]).optional(),
+  recruitmentStage: z.enum(["cv_received", "interview", "offer", "hired", "rejected", "ghosted", "withdrew"]).optional(),
   rejectionReason: z.string().nullable().optional(),
   startDate: z.string().datetime().nullable().optional(),
 });

@@ -471,7 +471,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                       const currentStage = (assignment.recruitmentStage || "cv_received") as RecruitmentStage;
                       const mainStages = STAGES.slice(0, 3);
                       const currentIdx = STAGES.findIndex((s) => s.key === currentStage);
-                      const isTerminal = currentStage === "hired" || currentStage === "rejected";
+                      const isTerminal = currentStage === "hired" || currentStage === "rejected" || currentStage === "ghosted" || currentStage === "withdrew";
 
                       return (
                         <div key={assignment.id} className="bg-white rounded-2xl border border-brand-gray-border p-5">
@@ -575,6 +575,28 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                               }`}
                             >
                               נדחה
+                            </button>
+                            <button
+                              onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: "ghosted" }, {
+                                onSuccess: () => toast.success("סומן כהבריז"),
+                                onError: () => toast.error("שגיאה"),
+                              })}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                currentStage === "ghosted" ? "bg-orange-400 text-white" : "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                              }`}
+                            >
+                              הבריז
+                            </button>
+                            <button
+                              onClick={() => updateRecruitmentStage.mutate({ id: assignment.id, recruitmentStage: "withdrew" }, {
+                                onSuccess: () => toast.success("סומן כהסיר מועמדות"),
+                                onError: () => toast.error("שגיאה"),
+                              })}
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                currentStage === "withdrew" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              }`}
+                            >
+                              הסיר מועמדות
                             </button>
                           </div>
                         </div>

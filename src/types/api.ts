@@ -1,6 +1,6 @@
 export type JobStatus = "open" | "filled";
 export type AssignmentStatus = "leading" | "candidate" | "not_relevant" | "future";
-export type RecruitmentStage = "cv_received" | "interview" | "offer" | "hired" | "rejected";
+export type RecruitmentStage = "cv_received" | "interview" | "offer" | "hired" | "rejected" | "ghosted" | "withdrew";
 export type CandidateSource = "referral" | "linkedin" | "facebook" | "job_board" | "instagram" | "tiktok";
 
 export interface HrStaff {
