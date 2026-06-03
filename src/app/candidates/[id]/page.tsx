@@ -57,6 +57,8 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const [editingNoteContent, setEditingNoteContent] = useState("");
   const [showAddJob, setShowAddJob] = useState(false);
   const [addJobId, setAddJobId] = useState("");
+  const [replaceDialog, setReplaceDialog] = useState<{ assignmentId: string; currentJobTitle: string } | null>(null);
+  const [replaceJobId, setReplaceJobId] = useState("");
   const [stageDialog, setStageDialog] = useState<{ assignmentId: string; type: "interview" | "hired"; jobTitle: string } | null>(null);
   const [stageDate, setStageDate] = useState("");
   const [rejectionDialog, setRejectionDialog] = useState<{ assignmentId: string; jobTitle: string } | null>(null);
@@ -163,6 +165,19 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
 
     setStageDialog(null);
     setStageDate("");
+  };
+
+  const handleReplaceJobAssignment = async () => {
+    if (!replaceDialog || !replaceJobId) return;
+    await deleteAssignment.mutateAsync(replaceDialog.assignmentId);
+    const result = await createAssignment.mutateAsync({ jobId: replaceJobId, candidateId: id });
+    if (result.error) {
+      toast.error(typeof result.error === "string" ? result.error : "שגיאה בשיוך");
+    } else {
+      toast.success("המשרה הוחלפה");
+      setReplaceDialog(null);
+      setReplaceJobId("");
+    }
   };
 
   const handleAddJobAssignment = async () => {
@@ -483,6 +498,16 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                               </Badge>
                               <button
                                 onClick={() => {
+                                  setReplaceJobId("");
+                                  setReplaceDialog({ assignmentId: assignment.id, currentJobTitle: assignment.job?.title ?? "" });
+                                }}
+                                className="p-1 rounded-lg text-brand-gray hover:text-brand-black hover:bg-brand-gray-light transition-colors text-xs font-medium px-2"
+                                title="החלף משרה"
+                              >
+                                החלף
+                              </button>
+                              <button
+                                onClick={() => {
                                   if (confirm(`להסיר שיוך ל-"${assignment.job?.title}"?`)) {
                                     deleteAssignment.mutate(assignment.id, {
                                       onSuccess: () => toast.success("השיוך הוסר"),
@@ -584,6 +609,49 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
         loading={createReminder.isPending}
         contextLabel={candidate.fullName}
       />
+
+      {/* Replace job assignment dialog */}
+      <Dialog open={!!replaceDialog} onOpenChange={(open) => { if (!open) { setReplaceDialog(null); setReplaceJobId(""); } }}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-brand-yellow" />
+              החלפת משרה
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-2">
+            <p className="text-xs text-brand-gray">מחליף את: <span className="font-medium text-brand-black">{replaceDialog?.currentJobTitle}</span></p>
+            <Select value={replaceJobId} onValueChange={(v) => setReplaceJobId(v ?? "")}>
+              <SelectTrigger className="rounded-xl w-full">
+                <SelectValue>
+                  {replaceJobId
+                    ? <span>{allOpenJobs?.find(j => j.id === replaceJobId)?.title}</span>
+                    : <span className="text-muted-foreground">בחרי משרה חדשה...</span>
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {allOpenJobs
+                  ?.filter(j => !candidate?.assignments?.some(a => a.jobId === j.id))
+                  .map((j) => (
+                    <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>
+                  ))
+                }
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button
+              onClick={handleReplaceJobAssignment}
+              disabled={!replaceJobId || createAssignment.isPending || deleteAssignment.isPending}
+              className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold"
+            >
+              החלף
+            </Button>
+            <Button variant="outline" onClick={() => { setReplaceDialog(null); setReplaceJobId(""); }} className="rounded-xl">ביטול</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add job assignment dialog */}
       <Dialog open={showAddJob} onOpenChange={(open) => { if (!open) { setShowAddJob(false); setAddJobId(""); } }}>
