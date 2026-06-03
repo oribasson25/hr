@@ -12,7 +12,30 @@ import AppShell from "@/components/layout/AppShell";
 import CandidateForm from "@/components/candidates/CandidateForm";
 import { useCandidates, useCreateCandidate } from "@/lib/api/candidates";
 import { useJobs } from "@/lib/api/jobs";
-import type { Candidate } from "@/types/api";
+import type { Candidate, JobAssignment } from "@/types/api";
+
+const STAGE_PRIORITY: Record<string, number> = {
+  offer: 6, interview: 5, cv_received: 4, hired: 3, rejected: 2, ghosted: 1, withdrew: 0,
+};
+
+const STAGE_BADGE: Record<string, { label: string; className: string }> = {
+  cv_received: { label: 'שלח קו"ח',       className: "bg-blue-50 text-blue-700 border-blue-100" },
+  interview:   { label: "תואם ראיון",      className: "bg-yellow-50 text-yellow-700 border-yellow-100" },
+  offer:       { label: "נשלחה הצעה",      className: "bg-purple-50 text-purple-700 border-purple-100" },
+  hired:       { label: "גויס",            className: "bg-green-50 text-green-700 border-green-100" },
+  rejected:    { label: "נדחה",            className: "bg-red-50 text-red-600 border-red-100" },
+  ghosted:     { label: "הבריז",           className: "bg-orange-50 text-orange-600 border-orange-100" },
+  withdrew:    { label: "ביטל מועמדות",   className: "bg-gray-100 text-gray-500 border-gray-200" },
+};
+
+function getPrimaryStage(assignments: JobAssignment[] | undefined): string | null {
+  if (!assignments || assignments.length === 0) return null;
+  return assignments.reduce((best, a) => {
+    const bPriority = STAGE_PRIORITY[best] ?? -1;
+    const aPriority = STAGE_PRIORITY[a.recruitmentStage] ?? -1;
+    return aPriority > bPriority ? a.recruitmentStage : best;
+  }, assignments[0].recruitmentStage);
+}
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -139,6 +162,7 @@ export default function CandidatesPage() {
                   <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider">טלפון</th>
                   <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider">אימייל</th>
                   <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider">משרות</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider">סטטוס</th>
                   <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider text-center">CV</th>
                   <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider text-center">הערה</th>
                   <th className="px-6 py-3 text-xs font-semibold text-brand-gray uppercase tracking-wider">תאריך</th>
@@ -173,6 +197,19 @@ export default function CandidatesPage() {
                       ) : (
                         <span className="text-brand-gray-border text-sm">—</span>
                       )}
+                    </td>
+                    <td className="px-6 py-4">
+                      {(() => {
+                        const stage = getPrimaryStage(candidate.assignments);
+                        const badge = stage ? STAGE_BADGE[stage] : null;
+                        return badge ? (
+                          <span className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full border ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        ) : (
+                          <span className="text-brand-gray-border text-sm">—</span>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 text-center">
                       {candidate.cvFilePath ? (
