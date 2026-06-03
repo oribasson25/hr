@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { FileText, MoreVertical, X, GripVertical, MessageSquare } from "lucide-react";
@@ -25,7 +24,6 @@ interface Props {
 
 export default function CandidateCard({ assignment, jobId, isDragging, onPreviewCV }: Props) {
   const router = useRouter();
-  const [noteRect, setNoteRect] = useState<DOMRect | null>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSortableDragging } = useSortable({ id: assignment.id });
 
   const deleteAssignment = useDeleteAssignment(jobId);
@@ -79,14 +77,9 @@ export default function CandidateCard({ assignment, jobId, isDragging, onPreview
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {candidate.notes && candidate.notes.length > 0 && (
-            <button
-              onMouseEnter={(e) => setNoteRect(e.currentTarget.getBoundingClientRect())}
-              onMouseLeave={() => setNoteRect(null)}
-              className="p-1 text-brand-gray hover:text-brand-black rounded-lg hover:bg-brand-gray-light transition-colors"
-              aria-label="הערה אחרונה"
-            >
+            <span className="p-1 text-brand-gray">
               <MessageSquare className="w-4 h-4" />
-            </button>
+            </span>
           )}
           {candidate.cvFilePath && (
             <button
@@ -110,26 +103,14 @@ export default function CandidateCard({ assignment, jobId, isDragging, onPreview
           </DropdownMenu>
         </div>
       </div>
-      <div className="mt-2 mr-6">
+      <div className="mt-2 mr-6 space-y-1.5">
         <span className="text-xs text-brand-gray opacity-70">{date}</span>
-      </div>
-
-      {noteRect && candidate.notes && candidate.notes[0] && (
-        <div
-          className="fixed z-50 bg-white border border-brand-gray-border rounded-xl shadow-lg p-4 max-w-xs w-72 pointer-events-none"
-          style={{
-            top: noteRect.bottom + 8,
-            left: Math.max(8, noteRect.left - 260 + noteRect.width / 2),
-          }}
-        >
-          <p className="text-xs text-brand-gray mb-1.5">
-            {new Date(candidate.notes[0].createdAt).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-          </p>
-          <p className="text-sm text-brand-black leading-relaxed whitespace-pre-wrap break-words line-clamp-6">
+        {candidate.notes && candidate.notes[0] && (
+          <p className="text-xs text-brand-gray leading-relaxed line-clamp-3 break-words">
             {candidate.notes[0].content}
           </p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
