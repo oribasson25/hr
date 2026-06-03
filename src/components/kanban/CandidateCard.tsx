@@ -110,7 +110,10 @@ export default function CandidateCard({ assignment, jobId, isDragging, onPreview
             </button>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger className="p-1 text-brand-gray hover:text-brand-black rounded-lg hover:bg-brand-gray-light transition-colors">
+            <DropdownMenuTrigger
+              className="p-1 text-brand-gray hover:text-brand-black rounded-lg hover:bg-brand-gray-light transition-colors"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <MoreVertical className="w-4 h-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
