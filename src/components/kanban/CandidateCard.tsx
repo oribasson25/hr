@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuGroup,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useDeleteAssignment, useUpdateAssignment } from "@/lib/api/assignments";
@@ -114,12 +115,14 @@ export default function CandidateCard({ assignment, jobId, isDragging, onPreview
               <MoreVertical className="w-4 h-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel className="text-xs text-brand-gray font-normal">העבר לעמודה</DropdownMenuLabel>
-              {STATUS_OPTIONS.filter(s => s.value !== assignment.status).map(s => (
-                <DropdownMenuItem key={s.value} onClick={() => handleMoveToStatus(s.value)} className="text-sm">
-                  {s.label}
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>העבר לעמודה</DropdownMenuLabel>
+                {STATUS_OPTIONS.filter(s => s.value !== assignment.status).map(s => (
+                  <DropdownMenuItem key={s.value} onClick={() => handleMoveToStatus(s.value)} className="text-sm">
+                    {s.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleRemove} className="text-red-600 focus:text-red-600 gap-2">
                 <X className="w-4 h-4" />
