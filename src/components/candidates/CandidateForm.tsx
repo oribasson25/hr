@@ -22,6 +22,8 @@ import { useJobs } from "@/lib/api/jobs";
 import { useHrStaff } from "@/lib/api/hr-staff";
 import type { Candidate, CandidateSource } from "@/types/api";
 
+const KNOWN_SOURCES = new Set<string>(["referral", "linkedin", "facebook", "job_board", "instagram", "tiktok"]);
+
 const schema = z.object({
   fullName: z.string().min(1, "נדרש שם מלא"),
   phone: z.string().min(9, "מספר טלפון לא תקין"),
@@ -48,7 +50,7 @@ interface Props {
     appliedForJobId?: string;
     appliedForCustom?: string;
     cv?: File;
-    source?: CandidateSource;
+    source?: string;
     referredByName?: string;
     salaryExpectation?: string;
     hrStaffId?: string;
@@ -64,7 +66,10 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [appliedForJobId, setAppliedForJobId] = useState<string>(preselectedJobId || "");
   const [appliedForCustom, setAppliedForCustom] = useState<string>("");
-  const [source, setSource] = useState<CandidateSource | "">(defaultValues?.source || "");
+  const initIsCustom = !!defaultValues?.source && !KNOWN_SOURCES.has(defaultValues.source);
+  const [sourceMode, setSourceMode] = useState<"preset" | "custom">(initIsCustom ? "custom" : "preset");
+  const [source, setSource] = useState<string>(initIsCustom ? "" : (defaultValues?.source || ""));
+  const [customSource, setCustomSource] = useState<string>(initIsCustom ? (defaultValues?.source || "") : "");
   const [referredByName, setReferredByName] = useState<string>(defaultValues?.referredByName || "");
   const [hrStaffId, setHrStaffId] = useState<string>(defaultValues?.hrStaffId || "");
 
@@ -98,7 +103,9 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
     setCvFile(null);
     setAppliedForJobId(preselectedJobId || "");
     setAppliedForCustom("");
+    setSourceMode("preset");
     setSource("");
+    setCustomSource("");
     setReferredByName("");
     setHrStaffId("");
     onClose();
@@ -111,7 +118,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
         cv: cvFile || undefined,
         appliedForJobId: appliedForJobId && appliedForJobId !== "custom" ? appliedForJobId : undefined,
         appliedForCustom: appliedForJobId === "custom" ? appliedForCustom : undefined,
-        source: source || undefined,
+        source: (sourceMode === "custom" ? customSource : source) || undefined,
         referredByName: source === "referral" && referredByName ? referredByName : undefined,
         hrStaffId: hrStaffId || undefined,
       });
@@ -168,10 +175,27 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
           {/* Source */}
           <div className="space-y-1.5">
             <Label>מקור הגעה</Label>
-            <Select value={source} onValueChange={(v) => { setSource((v ?? "") as CandidateSource | ""); if (v !== "referral") setReferredByName(""); }}>
+            <Select
+              value={sourceMode === "custom" ? "__other__" : source}
+              onValueChange={(v) => {
+                if (v === "__other__") {
+                  setSourceMode("custom");
+                  setSource("");
+                  setCustomSource("");
+                  setReferredByName("");
+                } else {
+                  setSourceMode("preset");
+                  setSource(v);
+                  setCustomSource("");
+                  if (v !== "referral") setReferredByName("");
+                }
+              }}
+            >
               <SelectTrigger className="rounded-xl w-full">
                 <SelectValue>
-                  {source
+                  {sourceMode === "custom"
+                    ? <span>{customSource || "אחר (מלל חופשי)"}</span>
+                    : source
                     ? <span>{SOURCE_LABELS[source as CandidateSource]}</span>
                     : <span className="text-muted-foreground">בחרי מקור...</span>
                   }
@@ -184,12 +208,22 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
                 <SelectItem value="tiktok">טיקטוק</SelectItem>
                 <SelectItem value="job_board">אתר משרות</SelectItem>
                 <SelectItem value="linkedin">לינקדאין</SelectItem>
+                <SelectItem value="__other__">אחר (מלל חופשי)...</SelectItem>
               </SelectContent>
             </Select>
+            {sourceMode === "custom" && (
+              <Input
+                value={customSource}
+                onChange={(e) => setCustomSource(e.target.value)}
+                placeholder="לדוגמה: טלגרם, WhatsApp, עיתון..."
+                className="rounded-xl"
+                autoFocus
+              />
+            )}
           </div>
 
           {/* Referral person */}
-          {source === "referral" && (
+          {sourceMode === "preset" && source === "referral" && (
             <div className="space-y-1.5">
               <Label htmlFor="referredByName">מי הפנה?</Label>
               <Input

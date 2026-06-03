@@ -45,6 +45,16 @@ export function useDeleteAssignment(jobId: string) {
   });
 }
 
+export function useDeleteAssignmentForCandidate(candidateId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fetch(`/api/assignments/${id}`, { method: "DELETE" }).then((r) => r.json()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["candidate", candidateId] });
+    },
+  });
+}
+
 export function useReorderAssignments(jobId: string) {
   const qc = useQueryClient();
   return useMutation({

@@ -11,7 +11,7 @@ const candidateSchema = z.object({
   address: z.string().optional(),
   appliedForJobId: z.string().optional(),
   appliedForCustom: z.string().optional(),
-  source: z.enum(["referral", "linkedin", "facebook", "job_board", "instagram", "tiktok"]).optional(),
+  source: z.string().optional(),
   referredById: z.string().optional(),
   referredByName: z.string().optional(),
   salaryExpectation: z.string().optional(),

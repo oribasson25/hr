@@ -3,7 +3,7 @@
 import { use, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar, User } from "lucide-react";
+import { ArrowRight, Edit, FileText, Trash2, Plus, X, Pencil, CheckCircle, Bell, RefreshCw, Calendar, User, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +19,9 @@ import { useCandidate, useUpdateCandidate, useDeleteCandidate, useUploadCV, useD
 import { useCreateNote, useUpdateNote, useDeleteNote } from "@/lib/api/notes";
 import { useCreateReminder } from "@/lib/api/reminders";
 import { useUpdateRecruitmentStage } from "@/lib/api/recruitment";
+import { useCreateAssignment, useDeleteAssignmentForCandidate } from "@/lib/api/assignments";
+import { useJobs } from "@/lib/api/jobs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { RecruitmentStage, CandidateSource } from "@/types/api";
 
 const SOURCE_LABELS: Record<CandidateSource, string> = {
@@ -52,6 +55,8 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteContent, setEditingNoteContent] = useState("");
+  const [showAddJob, setShowAddJob] = useState(false);
+  const [addJobId, setAddJobId] = useState("");
   const [stageDialog, setStageDialog] = useState<{ assignmentId: string; type: "interview" | "hired"; jobTitle: string } | null>(null);
   const [stageDate, setStageDate] = useState("");
   const [rejectionDialog, setRejectionDialog] = useState<{ assignmentId: string; jobTitle: string } | null>(null);
@@ -69,6 +74,9 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
   const deleteNote = useDeleteNote(id);
   const createReminder = useCreateReminder();
   const updateRecruitmentStage = useUpdateRecruitmentStage(id);
+  const createAssignment = useCreateAssignment();
+  const deleteAssignment = useDeleteAssignmentForCandidate(id);
+  const { data: allOpenJobs } = useJobs("open");
 
   const handleUpdate = async (data: Parameters<typeof CandidateForm>[0]["onSubmit"] extends (d: infer D) => unknown ? D : never) => {
     const result = await updateCandidate.mutateAsync({
@@ -155,6 +163,18 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
 
     setStageDialog(null);
     setStageDate("");
+  };
+
+  const handleAddJobAssignment = async () => {
+    if (!addJobId) return;
+    const result = await createAssignment.mutateAsync({ jobId: addJobId, candidateId: id });
+    if (result.error) {
+      toast.error(typeof result.error === "string" ? result.error : "שגיאה בשיוך");
+    } else {
+      toast.success("המועמד שויך למשרה");
+      setShowAddJob(false);
+      setAddJobId("");
+    }
   };
 
   const handleRejectionConfirm = async () => {
@@ -263,7 +283,7 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                 {candidate.source && (
                   <div className="flex gap-2">
                     <span className="text-brand-gray w-20 flex-shrink-0">מקור:</span>
-                    <span className="text-brand-black">{SOURCE_LABELS[candidate.source]}</span>
+                    <span className="text-brand-black">{SOURCE_LABELS[candidate.source as CandidateSource] ?? candidate.source}</span>
                   </div>
                 )}
                 {candidate.referredByName && (
@@ -411,6 +431,16 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
               </TabsContent>
 
               <TabsContent value="jobs">
+                <div className="flex justify-end mb-4">
+                  <Button
+                    size="sm"
+                    onClick={() => { setShowAddJob(true); setAddJobId(""); }}
+                    className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold gap-2"
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    הוסף משרה
+                  </Button>
+                </div>
                 {candidate.assignments?.length === 0 ? (
                   <div className="text-center py-8 text-brand-gray">המועמד אינו משויך למשרות</div>
                 ) : (
@@ -451,6 +481,20 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
                               <Badge className={`${STATUS_COLORS[assignment.status]} text-xs rounded-full`}>
                                 {STATUS_LABELS[assignment.status]}
                               </Badge>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`להסיר שיוך ל-"${assignment.job?.title}"?`)) {
+                                    deleteAssignment.mutate(assignment.id, {
+                                      onSuccess: () => toast.success("השיוך הוסר"),
+                                      onError: () => toast.error("שגיאה בהסרת שיוך"),
+                                    });
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-brand-gray hover:text-red-500 hover:bg-red-50 transition-colors"
+                                title="הסר שיוך"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
 
@@ -540,6 +584,49 @@ export default function CandidatePage({ params }: { params: Promise<{ id: string
         loading={createReminder.isPending}
         contextLabel={candidate.fullName}
       />
+
+      {/* Add job assignment dialog */}
+      <Dialog open={showAddJob} onOpenChange={(open) => { if (!open) { setShowAddJob(false); setAddJobId(""); } }}>
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-brand-yellow" />
+              שיוך למשרה
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-2">
+            <Label className="text-sm text-brand-gray">בחרי משרה פתוחה לשייך אליה את {candidate.fullName}</Label>
+            <Select value={addJobId} onValueChange={(v) => setAddJobId(v ?? "")}>
+              <SelectTrigger className="rounded-xl w-full">
+                <SelectValue>
+                  {addJobId
+                    ? <span>{allOpenJobs?.find(j => j.id === addJobId)?.title}</span>
+                    : <span className="text-muted-foreground">בחרי משרה...</span>
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {allOpenJobs
+                  ?.filter(j => !candidate.assignments?.some(a => a.jobId === j.id))
+                  .map((j) => (
+                    <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>
+                  ))
+                }
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button
+              onClick={handleAddJobAssignment}
+              disabled={!addJobId || createAssignment.isPending}
+              className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold"
+            >
+              שייך
+            </Button>
+            <Button variant="outline" onClick={() => { setShowAddJob(false); setAddJobId(""); }} className="rounded-xl">ביטול</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stage dialog (interview / hired) */}
       <Dialog open={!!stageDialog} onOpenChange={(open) => { if (!open) { setStageDialog(null); setStageDate(""); } }}>
