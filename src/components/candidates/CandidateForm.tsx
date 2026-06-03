@@ -185,7 +185,7 @@ export default function CandidateForm({ open, onClose, onSubmit, defaultValues, 
                   setReferredByName("");
                 } else {
                   setSourceMode("preset");
-                  setSource(v);
+                  setSource(v ?? "");
                   setCustomSource("");
                   if (v !== "referral") setReferredByName("");
                 }
