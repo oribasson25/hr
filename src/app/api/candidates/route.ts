@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     const candidates = await prisma.candidate.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
       include: {
         assignments: {
           include: { job: { select: { id: true, title: true, status: true } } },

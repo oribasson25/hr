@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const jobs = await prisma.job.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
       include: {
         _count: { select: { assignments: true } },
         assignments: { select: { status: true, recruitmentStage: true } },

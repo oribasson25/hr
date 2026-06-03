@@ -26,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         referredBy: { select: { id: true, fullName: true } },
         assignments: {
           include: { job: true },
-          orderBy: { createdAt: "desc" },
+          orderBy: { updatedAt: "desc" },
         },
       },
     });
