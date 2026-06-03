@@ -43,7 +43,7 @@ export interface Candidate {
   cvFilePath: string | null;
   cvFileType: string | null;
   appliedForCustom: string | null;
-  source: CandidateSource | null;
+  source: string | null;
   referredByName: string | null;
   salaryExpectation: string | null;
   hrStaffId: string | null;
