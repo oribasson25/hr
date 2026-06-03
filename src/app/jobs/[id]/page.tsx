@@ -4,6 +4,7 @@ import { useState } from "react";
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
 import { ArrowRight, MoreVertical, Edit, CheckCircle, Trash2, RotateCcw, AlertCircle, Bell, DollarSign, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -221,6 +222,45 @@ export default function JobPage({ params }: { params: Promise<{ id: string }> })
           </TabsList>
           <TabsContent value="board" className="mt-6">
             <KanbanBoard job={job as Parameters<typeof KanbanBoard>[0]['job']} />
+            {hiredAssignments.length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold text-brand-black mb-3 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  גויסו ({hiredAssignments.length})
+                </h2>
+                <div className="bg-white rounded-2xl border border-brand-gray-border overflow-hidden">
+                  <table className="w-full text-sm" dir="rtl">
+                    <thead>
+                      <tr className="border-b border-brand-gray-border bg-brand-gray-light text-brand-gray text-right">
+                        <th className="px-4 py-3 font-medium">שם מועמד</th>
+                        <th className="px-4 py-3 font-medium">טלפון</th>
+                        <th className="px-4 py-3 font-medium">תחילת עבודה</th>
+                        <th className="px-4 py-3 font-medium">ציפיות שכר</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hiredAssignments.map((a) => (
+                        <tr key={a.id} className="border-b border-brand-gray-border last:border-0 hover:bg-brand-gray-light/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <Link
+                              href={`/candidates/${a.candidate?.id}`}
+                              className="font-medium text-brand-black hover:text-brand-yellow underline underline-offset-2"
+                            >
+                              {a.candidate?.fullName}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-brand-gray">{a.candidate?.phone ?? "—"}</td>
+                          <td className="px-4 py-3 text-brand-gray">
+                            {a.startDate ? new Date(a.startDate).toLocaleDateString("he-IL") : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-brand-gray">{a.candidate?.salaryExpectation ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </TabsContent>
           <TabsContent value="details" className="mt-6">
             <div className="bg-white rounded-2xl border border-brand-gray-border p-6 space-y-6">
