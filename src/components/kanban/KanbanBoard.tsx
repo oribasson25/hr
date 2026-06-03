@@ -14,8 +14,9 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
-import { Plus, AlertCircle, UserPlus, ChevronDown } from "lucide-react";
+import { Plus, AlertCircle, UserPlus, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import KanbanColumn from "./KanbanColumn";
 import CandidateCard from "./CandidateCard";
 import AddCandidateDialog from "./AddCandidateDialog";
@@ -43,6 +44,7 @@ export default function KanbanBoard({ job }: Props) {
   const [showNewCandidateForm, setShowNewCandidateForm] = useState(false);
   const [previewCandidate, setPreviewCandidate] = useState<Candidate | null>(null);
   const [hrStaffFilter, setHrStaffFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const reorder = useReorderAssignments(job.id);
   const updateAssignment = useUpdateAssignment(job.id);
@@ -58,16 +60,22 @@ export default function KanbanBoard({ job }: Props) {
     const map: Record<AssignmentStatus, (JobAssignment & { candidate: Candidate })[]> = {
       leading: [], candidate: [], not_relevant: [], future: [],
     };
+    const q = searchQuery.trim().toLowerCase();
     job.assignments.forEach((a) => {
       if (a.recruitmentStage === "hired") return;
       if (hrStaffFilter && a.candidate?.hrStaffId !== hrStaffFilter) return;
+      if (q) {
+        const name = a.candidate?.fullName?.toLowerCase() ?? "";
+        const phone = a.candidate?.phone ?? "";
+        if (!name.includes(q) && !phone.includes(q)) return;
+      }
       if (a.status in map) map[a.status as AssignmentStatus].push(a);
     });
     Object.keys(map).forEach((k) => {
       map[k as AssignmentStatus].sort((a, b) => a.position - b.position);
     });
     return map;
-  }, [job.assignments, hrStaffFilter]);
+  }, [job.assignments, hrStaffFilter, searchQuery]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const assignment = job.assignments.find((a) => a.id === event.active.id);
@@ -141,7 +149,7 @@ export default function KanbanBoard({ job }: Props) {
       )}
 
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button onClick={() => setShowAddDialog(true)} className="rounded-xl bg-brand-yellow text-brand-black hover:bg-brand-yellow-hover font-semibold gap-2" size="sm">
             <Plus className="w-4 h-4" />
             מועמד קיים
@@ -150,6 +158,15 @@ export default function KanbanBoard({ job }: Props) {
             <UserPlus className="w-4 h-4" />
             מועמד חדש
           </Button>
+          <div className="relative">
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-gray pointer-events-none" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="חיפוש מועמד..."
+              className="pr-8 rounded-xl h-8 text-sm w-44 bg-white"
+            />
+          </div>
         </div>
         {hrStaffInJob.length > 0 && (
           <div className="relative">
