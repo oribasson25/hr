@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Search, Users, Check, X, MessageSquare } from "lucide-react";
+import { Plus, Search, Users, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,14 +23,11 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-type NotePreview = { note: { content: string; createdAt: string }; rect: DOMRect } | null;
-
 export default function CandidatesPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [jobFilter, setJobFilter] = useState("");
-  const [notePreview, setNotePreview] = useState<NotePreview>(null);
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: allJobs } = useJobs();
@@ -184,18 +181,13 @@ export default function CandidatesPage() {
                         <X className="w-4 h-4 text-brand-gray-border mx-auto" />
                       )}
                     </td>
-                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {candidate.notes && candidate.notes.length > 0 && (
-                        <button
-                          onMouseEnter={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            setNotePreview({ note: candidate.notes![0], rect });
-                          }}
-                          onMouseLeave={() => setNotePreview(null)}
-                          className="mx-auto flex items-center justify-center w-7 h-7 rounded-lg hover:bg-brand-yellow-soft transition-colors"
-                        >
-                          <MessageSquare className="w-4 h-4 text-brand-gray" />
-                        </button>
+                    <td className="px-6 py-4 max-w-[200px]">
+                      {candidate.notes && candidate.notes.length > 0 ? (
+                        <p className="text-xs text-brand-gray leading-relaxed line-clamp-2 break-words">
+                          {candidate.notes[0].content}
+                        </p>
+                      ) : (
+                        <span className="text-brand-gray-border text-sm">—</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-brand-gray text-sm">
@@ -216,20 +208,6 @@ export default function CandidatesPage() {
         loading={createCandidate.isPending}
       />
 
-      {notePreview && (
-        <div
-          className="fixed z-50 bg-white border border-brand-gray-border rounded-xl shadow-lg p-4 max-w-xs w-72 pointer-events-none"
-          style={{
-            top: notePreview.rect.bottom + 8,
-            left: Math.max(8, notePreview.rect.left - 272 + notePreview.rect.width / 2),
-          }}
-        >
-          <p className="text-xs text-brand-gray mb-1.5">
-            {new Date(notePreview.note.createdAt).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-          </p>
-          <p className="text-sm text-brand-black leading-relaxed whitespace-pre-wrap break-words line-clamp-6">{notePreview.note.content}</p>
-        </div>
-      )}
     </AppShell>
   );
 }
