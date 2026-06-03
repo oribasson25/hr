@@ -101,7 +101,7 @@ export default function RecruitmentPage() {
   const recentHires = data?.recentHires as Assignment[] | undefined;
 
   const allActive: Assignment[] = useMemo(() => stages
-    ? [...(stages.cv_received ?? []), ...(stages.interview ?? []), ...(stages.offer ?? [])]
+    ? [...(stages.offer ?? []), ...(stages.interview ?? []), ...(stages.cv_received ?? [])]
     : [], [stages]);
 
   const jobOptions = useMemo(() => {
